@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="L_JEARM">
+
+  <!-- Define the planning group for the arm -->
+  <group name="jearm">
+    <joint name="joint1"/>
+    <joint name="joint2"/>
+    <joint name="joint3"/>
+    <joint name="joint4"/>
+    <joint name="joint5"/>
+    <joint name="joint6"/>
+    <joint name="joint7"/>
+  </group>
+
+  <!-- Define end effector (adjust frame name if needed) -->
+  <group name="jearm_ee">
+    <link name="Link7"/>
+  </group>
+
+  <!-- Disable collisions between adjacent links -->
+  <disable_collisions link1="base_link" link2="Link2" reason="Adjacent"/>
+  <disable_collisions link1="Link2" link2="Link3" reason="Adjacent"/>
+  <disable_collisions link1="Link3" link2="Link4" reason="Adjacent"/>
+  <disable_collisions link1="Link4" link2="Link5" reason="Adjacent"/>
+  <disable_collisions link1="Link5" link2="Link6" reason="Adjacent"/>
+  <disable_collisions link1="Link6" link2="Link7" reason="Adjacent"/>
+
+</robot>

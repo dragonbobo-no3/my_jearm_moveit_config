@@ -1,0 +1,90 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Selection
+    Name: Selection
+  - Class: rviz_common/Tool Properties
+    Name: Tool Properties
+  - Class: rviz_common/Views
+    Name: Views
+
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Enabled: true
+      Name: Grid
+      Plane: XY
+      Plane Cell Count: 20
+      Cell Size: 0.2
+      Color: 160; 160; 160
+    - Class: rviz_default_plugins/RobotModel
+      Enabled: true
+      Name: RobotModel
+      Description Topic:
+        Value: robot_description
+      Visual Enabled: true
+      Collision Enabled: true
+      Alpha: 1
+      TF Prefix: ""
+      Update Interval: 0
+    - Class: moveit_rviz_plugin/MotionPlanning
+      Enabled: true
+      Name: MotionPlanning
+      Robot Description: robot_description
+      Planning Scene Topic: /planning_scene
+      Trajectory Topic: /display_planned_path
+      Move Group Namespace: ""
+      Scene Geometry:
+        Scene Alpha: 1
+        Scene Color: 50; 230; 50
+        Scene Display Time: 0.2
+        Type: Grid
+      Scene Robot:
+        Robot Alpha: 1
+        Robot Color: 150; 150; 150
+      Planning Request:
+        Goal State Alpha: 1
+        Goal State Color: 250; 128; 0
+        Interactive Marker Size: 0.25
+        Start State Alpha: 1
+        Start State Color: 0; 255; 0
+        Colliding Link Color: 210; 50; 250
+        Joint Violation Color: 255; 0; 255
+        Type: Sphere
+  Enabled: true
+  Global Options:
+    Fixed Frame: world
+    Background Color: 48; 48; 48
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/Interact
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+    - Class: rviz_default_plugins/PublishPoint
+      Topic:
+        Value: /clicked_point
+  Value: true
+
+Views:
+  Current:
+    Class: rviz_default_plugins/Orbit
+    Name: Orbit (Top)
+    Distance: 2.0
+    Focal Point:
+      X: 0
+      Y: 0
+      Z: 0
+    Pitch: 0.6
+    Yaw: 0.8
+
+Window Geometry:
+  Height: 1000
+  Width: 1600
+  X: 50
+  Y: 50
+  Hide Left Dock: false
+  Hide Right Dock: false

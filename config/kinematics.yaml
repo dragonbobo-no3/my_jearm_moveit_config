@@ -1,0 +1,8 @@
+# Kinematics configuration for L_JEARM
+# Using Pick-IK solver
+
+jearm:
+  kinematics_solver: pick_ik/PickIkPlugin
+  kinematics_solver_search_resolution: 0.005
+  kinematics_solver_timeout: 0.005
+  position_only_ik: false

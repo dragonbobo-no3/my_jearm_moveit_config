@@ -1,0 +1,72 @@
+# OMPL Planning Configuration for jearm
+planning_plugin: ompl_interface/OMPLPlanner
+request_adapters: >-
+  default_planning_request_adapters/AddTimeOptimalParameterization
+  default_planning_request_adapters/ResolveConstraintFrames
+  default_planning_request_adapters/FixWorkspaceBounds
+  default_planning_request_adapters/FixStartStateBounds
+  default_planning_request_adapters/FixStartStateCollision
+  default_planning_request_adapters/FixStartStatePathConstraints
+
+start_state_max_bounds_error: 0.1
+
+# Planning group specific configuration
+jearm:
+  planner_configs:
+    - RRTConnect
+    - RRT
+    - RRTstar
+    - TRRT
+    - PRM
+    - PRMstar
+  
+  # Default planner
+  default_planner_config: RRTConnect
+  
+  # Projection evaluator for sampling-based planners
+  projection_evaluator: joints(joint1,joint2,joint3)
+  
+  # Planning parameters
+  longest_valid_segment_fraction: 0.003
+  
+  # Planning time limits
+  planner_timeout: 10.0
+  
+  # Number of planning attempts
+  num_planning_attempts: 10
+
+# Planner configurations
+planner_configs:
+  RRTConnect:
+    type: geometric::RRTConnect
+    range: 0.05  # 0.0 = use default value
+  
+  RRT:
+    type: geometric::RRT
+    range: 0.0
+    goal_bias: 0.05
+  
+  RRTstar:
+    type: geometric::RRTstar
+    range: 0.0
+    goal_bias: 0.05
+    delay_collision_checking: 1
+  
+  TRRT:
+    type: geometric::TRRT
+    range: 0.0
+    goal_bias: 0.05
+    max_states_failed: 10
+    temp_change_factor: 2.0
+    min_temperature: 10e-10
+    init_temperature: 10e-6
+    frountier_threshold: 0.0
+    frountierNodeRatio: 0.1
+    k_constant: 0.0
+  
+  PRM:
+    type: geometric::PRM
+    max_nearest_neighbors: 10
+  
+  PRMstar:
+    type: geometric::PRMstar
