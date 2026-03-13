@@ -1,6 +1,6 @@
 import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, TimerAction
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, Command
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -40,6 +40,7 @@ def generate_launch_description():
     
     # Load controllers
     controllers_yaml = load_yaml(os.path.join(pkg_share, 'config', 'moveit_controllers.yaml'))
+    ros2_controllers_file = os.path.join(pkg_share, 'config', 'ros2_controllers.yaml')
     
     # Combine parameters
     moveit_config_dict = {
@@ -74,6 +75,35 @@ def generate_launch_description():
         executable="move_group",
         output="screen",
         parameters=[moveit_config_dict]
+    )
+
+    ros2_control_node = Node(
+        package="controller_manager",
+        executable="ros2_control_node",
+        output="screen",
+        parameters=[
+            {'robot_description': robot_description},
+            ros2_controllers_file,
+        ],
+    )
+
+    joint_state_broadcaster_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["joint_state_broadcaster", "--controller-manager", "/controller_manager"],
+        output="screen",
+    )
+
+    jearm_controller_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["jearm_controller", "--controller-manager", "/controller_manager"],
+        output="screen",
+    )
+
+    delayed_controller_spawners = TimerAction(
+        period=2.0,
+        actions=[joint_state_broadcaster_spawner, jearm_controller_spawner],
     )
 
     # RViz node
@@ -113,6 +143,8 @@ def generate_launch_description():
     # )
 
     return LaunchDescription([
+        ros2_control_node,
+        delayed_controller_spawners,
         robot_state_publisher,
         static_tf,
         move_group_node,

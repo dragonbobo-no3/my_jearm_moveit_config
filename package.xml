@@ -23,6 +23,7 @@
   <depend>rviz2</depend>
   <depend>tf2_ros</depend>
   <depend>xacro</depend>
+  <depend>je_software</depend>
 
   <exec_depend>pick_ik</exec_depend>
   <exec_depend>python3-yaml</exec_depend>
