@@ -102,7 +102,7 @@ def generate_launch_description():
     )
 
     delayed_controller_spawners = TimerAction(
-        period=2.0,
+        period=6.0,
         actions=[joint_state_broadcaster_spawner, jearm_controller_spawner],
     )
 
@@ -116,6 +116,19 @@ def generate_launch_description():
         output="screen",
         arguments=["-d", rviz_config_file],
         parameters=[moveit_config_dict],
+    )
+
+    # 延迟启动 RViz，确保 /joint_states 已在发布，
+    # 这样 RViz 在启动时能读取到实时的机械臂位姿，而不是默认值
+    delayed_rviz = TimerAction(
+        period=8.0,  # 等待 8 秒，确保 joint_state_broadcaster 已启动并发布状态
+        actions=[rviz_node],
+    )
+
+    # 延迟启动 move_group，确保硬件已初始化
+    delayed_move_group = TimerAction(
+        period=7.0,  # 等待 7 秒，在 controller spawners 之后但在 RViz 之前
+        actions=[move_group_node],
     )
 
     # Robot state publisher
@@ -147,7 +160,7 @@ def generate_launch_description():
         delayed_controller_spawners,
         robot_state_publisher,
         static_tf,
-        move_group_node,
-        rviz_node,
+        delayed_move_group,
+        delayed_rviz,
         # joint_state_publisher_gui,  # Disabled - fake_trajectory_executor publishes joint states
     ])

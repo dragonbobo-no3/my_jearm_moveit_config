@@ -20,8 +20,8 @@ jearm:
     - PRM
     - PRMstar
   
-  # Default planner
-  default_planner_config: RRTConnect
+  # Default planner - 改为 RRTstar (更优化) 或 PRM (更直观)
+  default_planner_config: RRTstar
   
   # Projection evaluator for sampling-based planners
   projection_evaluator: joints(joint1,joint2,joint3)
@@ -39,17 +39,17 @@ jearm:
 planner_configs:
   RRTConnect:
     type: geometric::RRTConnect
-    range: 0.05  # 0.0 = use default value
+    range: 0.0  # 0.0 = use default (更好的自适应)
   
   RRT:
     type: geometric::RRT
     range: 0.0
-    goal_bias: 0.05
+    goal_bias: 0.2  # 增大到 0.2 (从 0.05) - 更快倾向目标，避免绕圈
   
   RRTstar:
     type: geometric::RRTstar
     range: 0.0
-    goal_bias: 0.05
+    goal_bias: 0.2  # 同样增大
     delay_collision_checking: 1
   
   TRRT:

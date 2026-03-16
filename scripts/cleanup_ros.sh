@@ -18,8 +18,13 @@ PROCS=(
 
 echo "=== Killing stale ROS2 processes ==="
 for proc in "${PROCS[@]}"; do
-  count=$(pgrep -fc "$proc" 2>/dev/null || echo 0)
-  if [[ "$count" -gt 0 ]]; then
+  # get a numeric count from pgrep; sanitize any unexpected output
+  count=$(pgrep -fc -- "$proc" 2>/dev/null || true)
+  # default to 0 if empty
+  count=${count:-0}
+  # keep digits only (protect against stray text/newlines)
+  count=${count//[^0-9]/}
+  if [ "${count:-0}" -gt 0 ]; then
     pkill -9 -f "$proc" 2>/dev/null && echo "  killed ($count): $proc"
   fi
 done
