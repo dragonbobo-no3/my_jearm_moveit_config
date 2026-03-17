@@ -41,13 +41,13 @@ Visualization Manager:
         Scene Display Time: 0.2
         Type: Grid
       Scene Robot:
-        Robot Alpha: 1
+        Robot Alpha: 0
         Robot Color: 150; 150; 150
       Planning Request:
         Goal State Alpha: 1
         Goal State Color: 250; 128; 0
         Interactive Marker Size: 0.25
-        Start State Alpha: 1
+        Start State Alpha: 0
         Start State Color: 0; 255; 0
         Colliding Link Color: 210; 50; 250
         Joint Violation Color: 255; 0; 255
