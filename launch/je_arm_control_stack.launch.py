@@ -19,6 +19,7 @@ def _load_yaml(file_path):
 
 def generate_launch_description():
     use_fake_executor = LaunchConfiguration("use_fake_executor")
+    start_rviz = LaunchConfiguration("start_rviz")
 
     pkg_share = get_package_share_directory("my_jearm_moveit_config")
 
@@ -43,6 +44,7 @@ def generate_launch_description():
     real_stack = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(moveit_launch),
         condition=UnlessCondition(use_fake_executor),
+        launch_arguments={"start_rviz": start_rviz}.items(),
     )
 
     # ── fake mode: minimal stack without ros2_control ───────────────────────────
@@ -130,13 +132,19 @@ def generate_launch_description():
                 condition=IfCondition(use_fake_executor),
             )
         ],
+        condition=IfCondition(start_rviz),
     )
 
     return LaunchDescription([
         DeclareLaunchArgument(
             "use_fake_executor",
-            default_value="false",
+            default_value="true",
             description="true = fake mode (no ros2_control); false = real hardware",
+        ),
+        DeclareLaunchArgument(
+            "start_rviz",
+            default_value="true",
+            description="Whether to start RViz",
         ),
         real_stack,
         robot_state_publisher,

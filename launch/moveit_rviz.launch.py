@@ -1,6 +1,7 @@
 import os
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, TimerAction
+from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, Command
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -15,6 +16,7 @@ def load_yaml(file_path):
         return None
 
 def generate_launch_description():
+    start_rviz = LaunchConfiguration('start_rviz')
     
     # Use absolute path instead of package discovery
     pkg_share = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -123,6 +125,7 @@ def generate_launch_description():
     delayed_rviz = TimerAction(
         period=8.0,  # 等待 8 秒，确保 joint_state_broadcaster 已启动并发布状态
         actions=[rviz_node],
+        condition=IfCondition(start_rviz),
     )
 
     # 延迟启动 move_group，确保硬件已初始化
@@ -156,6 +159,11 @@ def generate_launch_description():
     # )
 
     return LaunchDescription([
+        DeclareLaunchArgument(
+            'start_rviz',
+            default_value='true',
+            description='Whether to start RViz',
+        ),
         ros2_control_node,
         delayed_controller_spawners,
         robot_state_publisher,
