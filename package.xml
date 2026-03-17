@@ -20,10 +20,13 @@
   <depend>moveit_ros_visualization</depend>
   <depend>joint_state_publisher_gui</depend>
   <depend>robot_state_publisher</depend>
+  <depend>rclcpp</depend>
+  <depend>rclcpp_action</depend>
+  <depend>control_msgs</depend>
+  <depend>sensor_msgs</depend>
   <depend>rviz2</depend>
   <depend>tf2_ros</depend>
   <depend>xacro</depend>
-  <depend>je_software</depend>
 
   <exec_depend>pick_ik</exec_depend>
   <exec_depend>python3-yaml</exec_depend>

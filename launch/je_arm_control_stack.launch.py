@@ -96,7 +96,7 @@ def generate_launch_description():
     )
 
     fake_executor = Node(
-        package='je_arm_pcb_inspection_sm',
+        package='my_jearm_moveit_config',
         executable='fake_trajectory_executor',
         output='screen',
         additional_env=runtime_env,
