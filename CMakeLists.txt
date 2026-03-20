@@ -6,6 +6,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(control_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 add_executable(fake_trajectory_executor
   src/fake_trajectory_executor.cpp
@@ -16,6 +17,7 @@ ament_target_dependencies(fake_trajectory_executor
   rclcpp_action
   control_msgs
   sensor_msgs
+  tf2_ros
 )
 
 # Install config files

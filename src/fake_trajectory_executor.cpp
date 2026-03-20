@@ -7,11 +7,15 @@
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <control_msgs/action/follow_joint_trajectory.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 #include <chrono>
 #include <thread>
 #include <cstdlib>
 #include <mutex>
 #include <cmath>
+#include <sstream>
+#include <iomanip>
 
 class FakeTrajectoryExecutor : public rclcpp::Node {
 public:
@@ -20,6 +24,12 @@ public:
     rclcpp_action::ServerGoalHandle<FollowJointTrajectory>;
 
   FakeTrajectoryExecutor() : rclcpp::Node("fake_trajectory_executor") {
+    base_link_ = this->declare_parameter<std::string>("base_link", "base_link");
+    ee_link_ = this->declare_parameter<std::string>("ee_link", "Link7");
+
+    tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+    tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
+
     action_server_ =
       rclcpp_action::create_server<FollowJointTrajectory>(
       this,
@@ -50,7 +60,8 @@ public:
 
     RCLCPP_INFO(
       this->get_logger(),
-      "Fake Trajectory Executor initialized for jearm_controller (Home position: [0, 0, 0, 0, 0, 0, 0])");
+      "Fake Trajectory Executor initialized for jearm_controller (Home position: [0, 0, 0, 0, 0, 0, 0], TF: %s -> %s)",
+      base_link_.c_str(), ee_link_.c_str());
   }
 
 private:
@@ -61,14 +72,39 @@ private:
   std::vector<double> current_joint_positions_;
   std::mutex joint_state_mutex_;
   bool has_joint_state_ = false;
+  std::string base_link_;
+  std::string ee_link_;
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
 
   rclcpp_action::GoalResponse handle_goal(
     const std::array<unsigned char, 16> & uuid,
     std::shared_ptr<const FollowJointTrajectory::Goal> goal)
   {
     (void)uuid;
-    (void)goal;
-    RCLCPP_INFO(this->get_logger(), "Received new goal");
+    if (!goal) {
+      RCLCPP_ERROR(this->get_logger(), "Received null goal");
+      return rclcpp_action::GoalResponse::REJECT;
+    }
+
+    const auto & trajectory = goal->trajectory;
+    RCLCPP_INFO(
+      this->get_logger(),
+      "Received new goal: %zu points, joints=[%s]",
+      trajectory.points.size(),
+      join_joint_names(trajectory.joint_names).c_str());
+
+    for (size_t i = 0; i < trajectory.points.size(); ++i) {
+      const auto & point = trajectory.points[i];
+      const double point_time = point.time_from_start.sec + point.time_from_start.nanosec / 1e9;
+      RCLCPP_INFO(
+        this->get_logger(),
+        "Path point[%zu] t=%.3fs %s",
+        i,
+        point_time,
+        format_joint_positions(trajectory.joint_names, point.positions).c_str());
+    }
+
     return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
   }
 
@@ -205,8 +241,92 @@ private:
     const auto & last_point = goal->trajectory.points.back();
     publish_joint_state(goal->trajectory.joint_names, last_point.positions);
 
+    std::vector<std::string> final_names;
+    std::vector<double> final_positions;
+    {
+      std::lock_guard<std::mutex> lock(joint_state_mutex_);
+      final_names = current_joint_names_;
+      final_positions = current_joint_positions_;
+    }
+
+    RCLCPP_INFO(
+      this->get_logger(),
+      "Final arm state: %s",
+      format_joint_positions(final_names, final_positions).c_str());
+
+    log_end_effector_pose();
+
     RCLCPP_INFO(this->get_logger(), "=== Trajectory execution COMPLETED ===");
     goal_handle->succeed(result);
+  }
+
+  void log_end_effector_pose()
+  {
+    if (!tf_buffer_) {
+      RCLCPP_WARN(this->get_logger(), "TF buffer not initialized, skip end-effector pose logging");
+      return;
+    }
+
+    for (int attempt = 0; attempt < 5; ++attempt) {
+      try {
+        const auto transform = tf_buffer_->lookupTransform(
+          base_link_, ee_link_, tf2::TimePointZero, tf2::durationFromSec(0.1));
+
+        const auto & t = transform.transform.translation;
+        const auto & q = transform.transform.rotation;
+        RCLCPP_INFO(
+          this->get_logger(),
+          "Final EE pose (%s -> %s): pos[x=%.4f, y=%.4f, z=%.4f], quat[x=%.4f, y=%.4f, z=%.4f, w=%.4f]",
+          base_link_.c_str(), ee_link_.c_str(),
+          t.x, t.y, t.z,
+          q.x, q.y, q.z, q.w);
+        return;
+      } catch (const std::exception & ex) {
+        if (attempt == 4) {
+          RCLCPP_WARN(
+            this->get_logger(),
+            "Failed to query final EE pose (%s -> %s): %s",
+            base_link_.c_str(), ee_link_.c_str(), ex.what());
+          return;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+      }
+    }
+  }
+
+  std::string join_joint_names(const std::vector<std::string> & joint_names) const
+  {
+    std::ostringstream stream;
+    for (size_t i = 0; i < joint_names.size(); ++i) {
+      if (i > 0) {
+        stream << ", ";
+      }
+      stream << joint_names[i];
+    }
+    return stream.str();
+  }
+
+  std::string format_joint_positions(
+    const std::vector<std::string> & joint_names,
+    const std::vector<double> & positions) const
+  {
+    std::ostringstream stream;
+    stream << std::fixed << std::setprecision(3) << "[";
+    const size_t count = std::min(joint_names.size(), positions.size());
+    for (size_t i = 0; i < count; ++i) {
+      if (i > 0) {
+        stream << ", ";
+      }
+      stream << joint_names[i] << "=" << positions[i];
+    }
+    if (positions.size() > joint_names.size()) {
+      if (count > 0) {
+        stream << ", ";
+      }
+      stream << "extra_positions=" << (positions.size() - joint_names.size());
+    }
+    stream << "]";
+    return stream.str();
   }
 
   void publish_joint_state(
