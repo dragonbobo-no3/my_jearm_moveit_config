@@ -11,13 +11,20 @@ controller_manager:
 jearm_controller:
   ros__parameters:
     joints:
-      - joint1
-      - joint2
-      - joint3
-      - joint4
-      - joint5
-      - joint6
-      - joint7
+      - joint11
+      - joint12
+      - joint13
+      - joint14
+      - joint15
+      - joint16
+      - joint17
+      - joint21
+      - joint22
+      - joint23
+      - joint24
+      - joint25
+      - joint26
+      - joint27
 
     command_interfaces:
       - position
@@ -26,7 +33,7 @@ jearm_controller:
       - position
       - velocity
 
-    allow_partial_joints_goal: false
+    allow_partial_joints_goal: true
     open_loop_control: true
 
     constraints:
@@ -35,10 +42,17 @@ jearm_controller:
       # 平衡的容差设置：给硬件足够的回旋空间，但仍要求相对精确
       # goal: 目标位置容差 (执行完成时) - 允许 0.3 rad (~17°) 的误差
       # trajectory: 轨迹跟踪容差 (执行中) - 允许 0.5 rad 的轨迹偏差
-      joint1: {trajectory: 0.5, goal: 0.3}   # 增加回 0.5/0.3 以容纳硬件限制
-      joint2: {trajectory: 0.5, goal: 0.3}
-      joint3: {trajectory: 0.5, goal: 0.3}
-      joint4: {trajectory: 0.5, goal: 0.3}
-      joint5: {trajectory: 0.5, goal: 0.3}
-      joint6: {trajectory: 0.5, goal: 0.3}
-      joint7: {trajectory: 0.5, goal: 0.3}
+      joint11: {trajectory: 0.5, goal: 0.3}
+      joint12: {trajectory: 0.5, goal: 0.3}
+      joint13: {trajectory: 0.5, goal: 0.3}
+      joint14: {trajectory: 0.5, goal: 0.3}
+      joint15: {trajectory: 0.5, goal: 0.3}
+      joint16: {trajectory: 0.5, goal: 0.3}
+      joint17: {trajectory: 0.5, goal: 0.3}
+      joint21: {trajectory: 0.5, goal: 0.3}
+      joint22: {trajectory: 0.5, goal: 0.3}
+      joint23: {trajectory: 0.5, goal: 0.3}
+      joint24: {trajectory: 0.5, goal: 0.3}
+      joint25: {trajectory: 0.5, goal: 0.3}
+      joint26: {trajectory: 0.5, goal: 0.3}
+      joint27: {trajectory: 0.5, goal: 0.3}

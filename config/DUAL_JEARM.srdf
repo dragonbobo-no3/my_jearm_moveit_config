@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="DOUB_JEARM">
+
+  <group name="left_arm">
+    <joint name="joint11"/>
+    <joint name="joint12"/>
+    <joint name="joint13"/>
+    <joint name="joint14"/>
+    <joint name="joint15"/>
+    <joint name="joint16"/>
+    <joint name="joint17"/>
+  </group>
+
+  <group name="right_arm">
+    <joint name="joint21"/>
+    <joint name="joint22"/>
+    <joint name="joint23"/>
+    <joint name="joint24"/>
+    <joint name="joint25"/>
+    <joint name="joint26"/>
+    <joint name="joint27"/>
+  </group>
+
+  <group name="both_arms">
+    <group name="left_arm"/>
+    <group name="right_arm"/>
+  </group>
+
+  <group name="left_arm_ee">
+    <link name="Link17"/>
+  </group>
+
+  <group name="right_arm_ee">
+    <link name="Link27"/>
+  </group>
+
+  <disable_collisions link1="base_link" link2="Link12" reason="Adjacent"/>
+  <disable_collisions link1="Link12" link2="Link13" reason="Adjacent"/>
+  <disable_collisions link1="Link13" link2="Link14" reason="Adjacent"/>
+  <disable_collisions link1="Link14" link2="Link15" reason="Adjacent"/>
+  <disable_collisions link1="Link15" link2="Link16" reason="Adjacent"/>
+  <disable_collisions link1="Link16" link2="Link17" reason="Adjacent"/>
+
+  <disable_collisions link1="base_link" link2="Link22" reason="Adjacent"/>
+  <disable_collisions link1="Link22" link2="Link23" reason="Adjacent"/>
+  <disable_collisions link1="Link23" link2="Link24" reason="Adjacent"/>
+  <disable_collisions link1="Link24" link2="Link25" reason="Adjacent"/>
+  <disable_collisions link1="Link25" link2="Link26" reason="Adjacent"/>
+  <disable_collisions link1="Link26" link2="Link27" reason="Adjacent"/>
+
+</robot>

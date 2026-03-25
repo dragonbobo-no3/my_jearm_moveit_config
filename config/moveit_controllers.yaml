@@ -16,10 +16,17 @@ moveit_simple_controller_manager:
     action_ns: follow_joint_trajectory
     default: true
     joints:
-      - joint1
-      - joint2
-      - joint3
-      - joint4
-      - joint5
-      - joint6
-      - joint7
+      - joint11
+      - joint12
+      - joint13
+      - joint14
+      - joint15
+      - joint16
+      - joint17
+      - joint21
+      - joint22
+      - joint23
+      - joint24
+      - joint25
+      - joint26
+      - joint27

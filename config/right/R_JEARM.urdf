@@ -3,12 +3,12 @@
      Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot
-  name="L_JEARM">
+  name="R_JEARM">
   <link
     name="base_link">
     <inertial>
       <origin
-        xyz="-0.40373 -0.2184 -0.21199"
+        xyz="-0.40373 -0.2184 0.21205"
         rpy="0 0 0" />
       <mass
         value="34.216" />
@@ -17,7 +17,7 @@
         ixy="-0.029534"
         ixz="-0.0001037"
         iyy="3.8398"
-        iyz="-7.0807E-05"
+        iyz="-6.957E-05"
         izz="3.6685" />
     </inertial>
     <visual>
@@ -48,16 +48,16 @@
     name="Link1">
     <inertial>
       <origin
-        xyz="2.7836E-05 0.0032223 -0.0061763"
+        xyz="-2.7836E-05 0.0032223 0.0061763"
         rpy="0 0 0" />
       <mass
         value="0.15903" />
       <inertia
         ixx="0.00024741"
-        ixy="1.7103E-07"
+        ixy="-1.7103E-07"
         ixz="-5.1201E-08"
         iyy="0.00018207"
-        iyz="2.5958E-06"
+        iyz="-2.5958E-06"
         izz="0.00021676" />
     </inertial>
     <visual>
@@ -66,7 +66,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://my_jearm_moveit_config/config/meshes/left/l_link1.STL" />
+          filename="package://my_jearm_moveit_config/config/meshes/right/r_link1.STL" />
       </geometry>
       <material
         name="">
@@ -80,7 +80,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://my_jearm_moveit_config/config/meshes/left/l_link1.STL" />
+          filename="package://my_jearm_moveit_config/config/meshes/right/r_link1.STL" />
       </geometry>
     </collision>
   </link>
@@ -97,8 +97,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-3.14"
-      upper="3.14"
+      lower="-5.14"
+      upper="5.14"
       effort="100"
       velocity="3.14" />
   </joint>
@@ -106,16 +106,16 @@
     name="Link2">
     <inertial>
       <origin
-        xyz="1.3538E-07 -0.025603 0.0022931"
+        xyz="-1.6327E-07 -0.025603 -0.0022931"
         rpy="0 0 0" />
       <mass
         value="0.24379" />
       <inertia
         ixx="0.00094174"
-        ixy="7.9265E-10"
+        ixy="-7.9265E-10"
         ixz="2.0047E-09"
         iyy="0.00077932"
-        iyz="7.4771E-06"
+        iyz="-7.4771E-06"
         izz="0.00032368" />
     </inertial>
     <visual>
@@ -124,7 +124,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://my_jearm_moveit_config/config/meshes/left/l_link2.STL" />
+          filename="package://my_jearm_moveit_config/config/meshes/right/r_link2.STL" />
       </geometry>
       <material
         name="">
@@ -138,7 +138,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://my_jearm_moveit_config/config/meshes/left/l_link2.STL" />
+          filename="package://my_jearm_moveit_config/config/meshes/right/r_link2.STL" />
       </geometry>
     </collision>
   </link>
@@ -147,7 +147,7 @@
     type="revolute">
     <origin
       xyz="0 0 0"
-      rpy="-1.5708 0 0" />
+      rpy="1.5708 0 0" />
     <parent
       link="Link1" />
     <child
@@ -155,8 +155,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-1.85"
-      upper="1.8"
+      lower="-1.86"
+      upper="1.82"
       effort="100"
       velocity="3.14" />
   </joint>
@@ -164,14 +164,14 @@
     name="Link3">
     <inertial>
       <origin
-        xyz="-0.0013392 0.00027359 -0.078005"
+        xyz="-0.0013392 -0.00027359 0.078005"
         rpy="0 0 0" />
       <mass
         value="0.24955" />
       <inertia
         ixx="0.00049972"
-        ixy="-1.565E-07"
-        ixz="2.0036E-05"
+        ixy="1.565E-07"
+        ixz="-2.0036E-05"
         iyy="0.00052699"
         iyz="-5.9993E-07"
         izz="0.00028114" />
@@ -182,7 +182,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://my_jearm_moveit_config/config/meshes/left/l_link3.STL" />
+          filename="package://my_jearm_moveit_config/config/meshes/right/r_link3.STL" />
       </geometry>
       <material
         name="">
@@ -196,7 +196,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://my_jearm_moveit_config/config/meshes/left/l_link3.STL" />
+          filename="package://my_jearm_moveit_config/config/meshes/right/r_link3.STL" />
       </geometry>
     </collision>
   </link>
@@ -205,7 +205,7 @@
     type="revolute">
     <origin
       xyz="0 -0.2719 0"
-      rpy="1.5708 0 0" />
+      rpy="-1.5708 0 0" />
     <parent
       link="Link2" />
     <child
@@ -240,7 +240,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://my_jearm_moveit_config/config/meshes/left/l_link4.STL" />
+          filename="package://my_jearm_moveit_config/config/meshes/right/r_link4.STL" />
       </geometry>
       <material
         name="">
@@ -254,7 +254,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://my_jearm_moveit_config/config/meshes/left/l_link4.STL" />
+          filename="package://my_jearm_moveit_config/config/meshes/right/r_link4.STL" />
       </geometry>
     </collision>
   </link>
@@ -263,7 +263,7 @@
     type="revolute">
     <origin
       xyz="-0.008 0 0"
-      rpy="-1.5708 0 0" />
+      rpy="1.5708 0 0" />
     <parent
       link="Link3" />
     <child
@@ -271,8 +271,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-2.26"
-      upper="1.82"
+      lower="-2.27"
+      upper="1.8"
       effort="100"
       velocity="3.14" />
   </joint>
@@ -280,14 +280,14 @@
     name="Link5">
     <inertial>
       <origin
-        xyz="1.2792E-07 -0.0016321 -0.052024"
+        xyz="1.2792E-07 0.0016321 0.052024"
         rpy="0 0 0" />
       <mass
         value="0.20346" />
       <inertia
         ixx="0.00028328"
-        ixy="-9.1339E-10"
-        ixz="1.3106E-09"
+        ixy="9.1339E-10"
+        ixz="-1.3106E-09"
         iyy="0.00029079"
         iyz="8.3228E-06"
         izz="0.00023151" />
@@ -298,7 +298,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://my_jearm_moveit_config/config/meshes/left/l_link5.STL" />
+          filename="package://my_jearm_moveit_config/config/meshes/right/r_link5.STL" />
       </geometry>
       <material
         name="">
@@ -312,7 +312,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://my_jearm_moveit_config/config/meshes/left/l_link5.STL" />
+          filename="package://my_jearm_moveit_config/config/meshes/right/r_link5.STL" />
       </geometry>
     </collision>
   </link>
@@ -321,7 +321,7 @@
     type="revolute">
     <origin
       xyz="0.008 -0.2189 0"
-      rpy="1.5708 0 0" />
+      rpy="-1.5708 0 0" />
     <parent
       link="Link4" />
     <child
@@ -356,7 +356,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://my_jearm_moveit_config/config/meshes/left/l_link6.STL" />
+          filename="package://my_jearm_moveit_config/config/meshes/right/r_link6.STL" />
       </geometry>
       <material
         name="">
@@ -370,7 +370,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://my_jearm_moveit_config/config/meshes/left/l_link6.STL" />
+          filename="package://my_jearm_moveit_config/config/meshes/right/r_link6.STL" />
       </geometry>
     </collision>
   </link>
@@ -379,7 +379,7 @@
     type="revolute">
     <origin
       xyz="0 0 0"
-      rpy="-1.5708 0 0" />
+      rpy="1.5708 0 0" />
     <parent
       link="Link5" />
     <child
@@ -396,16 +396,16 @@
     name="Link7">
     <inertial>
       <origin
-        xyz="0.012652 0.00060356 0.067612"
+        xyz="0.012652 0.00064615 -0.067442"
         rpy="0 0 0" />
       <mass
         value="0.36915" />
       <inertia
-        ixx="0.00044755"
-        ixy="-1.4027E-07"
-        ixz="5.8354E-06"
+        ixx="0.00044759"
+        ixy="3.5408E-08"
+        ixz="-5.838E-06"
         iyy="0.00033738"
-        iyz="-7.6821E-06"
+        iyz="7.6361E-06"
         izz="0.00018678" />
     </inertial>
     <visual>
@@ -414,7 +414,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://my_jearm_moveit_config/config/meshes/left/l_link7.STL" />
+          filename="package://my_jearm_moveit_config/config/meshes/right/r_link7.STL" />
       </geometry>
       <material
         name="">
@@ -428,7 +428,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://my_jearm_moveit_config/config/meshes/left/l_link7.STL" />
+          filename="package://my_jearm_moveit_config/config/meshes/right/r_link7.STL" />
       </geometry>
     </collision>
   </link>
@@ -437,7 +437,7 @@
     type="revolute">
     <origin
       xyz="0 -0.124 0"
-      rpy="1.5708 0 0" />
+      rpy="-1.5708 0 0" />
     <parent
       link="Link6" />
     <child
@@ -450,57 +450,4 @@
       effort="100"
       velocity="3.14" />
   </joint>
-
-  <ros2_control name="jearm_system" type="system">
-    <hardware>
-      <plugin>je_software/JeZmqSystemHardware</plugin>
-      <param name="robot_ip">192.168.0.99</param>
-      <param name="pub_port">8001</param>
-      <param name="sub_port">8000</param>
-      <param name="command_dt">0.01</param>
-    </hardware>
-
-    <joint name="joint1">
-      <command_interface name="position"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="joint2">
-      <command_interface name="position"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="joint3">
-      <command_interface name="position"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="joint4">
-      <command_interface name="position"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="joint5">
-      <command_interface name="position"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="joint6">
-      <command_interface name="position"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="joint7">
-      <command_interface name="position"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-  </ros2_control>
 </robot>

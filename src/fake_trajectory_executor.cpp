@@ -25,7 +25,12 @@ public:
 
   FakeTrajectoryExecutor() : rclcpp::Node("fake_trajectory_executor") {
     base_link_ = this->declare_parameter<std::string>("base_link", "base_link");
-    ee_link_ = this->declare_parameter<std::string>("ee_link", "Link7");
+    ee_link_ = this->declare_parameter<std::string>("ee_link", "Link17");
+    const std::vector<std::string> default_joint_names = {
+      "joint11", "joint12", "joint13", "joint14", "joint15", "joint16", "joint17",
+      "joint21", "joint22", "joint23", "joint24", "joint25", "joint26", "joint27"};
+    const auto configured_joint_names = this->declare_parameter<std::vector<std::string>>(
+      "joint_names", default_joint_names);
 
     tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
@@ -42,8 +47,11 @@ public:
 
     {
       std::lock_guard<std::mutex> lock(joint_state_mutex_);
-      current_joint_names_ = {"joint1", "joint2", "joint3", "joint4", "joint5", "joint6", "joint7"};
-      current_joint_positions_ = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+      current_joint_names_ = configured_joint_names;
+      if (current_joint_names_.empty()) {
+        current_joint_names_ = default_joint_names;
+      }
+      current_joint_positions_.assign(current_joint_names_.size(), 0.0);
       has_joint_state_ = true;
     }
 
@@ -54,14 +62,14 @@ public:
     msg->header.stamp = this->now();
     msg->name = current_joint_names_;
     msg->position = current_joint_positions_;
-    msg->velocity.resize(7, 0.0);
-    msg->effort.resize(7, 0.0);
+    msg->velocity.resize(current_joint_positions_.size(), 0.0);
+    msg->effort.resize(current_joint_positions_.size(), 0.0);
     joint_state_pub_->publish(std::move(msg));
 
     RCLCPP_INFO(
       this->get_logger(),
-      "Fake Trajectory Executor initialized for jearm_controller (Home position: [0, 0, 0, 0, 0, 0, 0], TF: %s -> %s)",
-      base_link_.c_str(), ee_link_.c_str());
+      "Fake Trajectory Executor initialized for jearm_controller (%zu joints, TF: %s -> %s)",
+      current_joint_names_.size(), base_link_.c_str(), ee_link_.c_str());
   }
 
 private:
@@ -94,10 +102,41 @@ private:
       trajectory.points.size(),
       join_joint_names(trajectory.joint_names).c_str());
 
+    if (!trajectory.points.empty()) {
+      const auto to_sec = [](const builtin_interfaces::msg::Duration & duration_msg) {
+          return duration_msg.sec + duration_msg.nanosec / 1e9;
+        };
+
+      const double first_time = to_sec(trajectory.points.front().time_from_start);
+      const double last_time = to_sec(trajectory.points.back().time_from_start);
+      bool is_monotonic = true;
+      bool has_effective_timing = false;
+
+      for (size_t i = 1; i < trajectory.points.size(); ++i) {
+        const double prev_time = to_sec(trajectory.points[i - 1].time_from_start);
+        const double curr_time = to_sec(trajectory.points[i].time_from_start);
+        if (curr_time + 1e-9 < prev_time) {
+          is_monotonic = false;
+        }
+        if (curr_time - prev_time > 1e-3) {
+          has_effective_timing = true;
+        }
+      }
+
+      RCLCPP_INFO(
+        this->get_logger(),
+        "Trajectory timing summary: first=%.3fs, last=%.3fs, duration=%.3fs, monotonic=%s, effective_timing=%s",
+        first_time,
+        last_time,
+        std::max(0.0, last_time - first_time),
+        is_monotonic ? "true" : "false",
+        has_effective_timing ? "true" : "false");
+    }
+
     for (size_t i = 0; i < trajectory.points.size(); ++i) {
       const auto & point = trajectory.points[i];
       const double point_time = point.time_from_start.sec + point.time_from_start.nanosec / 1e9;
-      RCLCPP_INFO(
+      RCLCPP_DEBUG(
         this->get_logger(),
         "Path point[%zu] t=%.3fs %s",
         i,
@@ -333,19 +372,40 @@ private:
     const std::vector<std::string> & joint_names,
     const std::vector<double> & positions)
   {
+    if (joint_names.size() != positions.size()) {
+      RCLCPP_ERROR(
+        this->get_logger(),
+        "Trajectory point mismatch: joint_names=%zu positions=%zu",
+        joint_names.size(), positions.size());
+      return;
+    }
+
     {
       std::lock_guard<std::mutex> lock(joint_state_mutex_);
-      current_joint_names_ = joint_names;
-      current_joint_positions_ = positions;
+      for (size_t i = 0; i < joint_names.size(); ++i) {
+        const auto it = std::find(current_joint_names_.begin(), current_joint_names_.end(), joint_names[i]);
+        if (it == current_joint_names_.end()) {
+          RCLCPP_WARN(
+            this->get_logger(),
+            "Ignoring unknown joint in trajectory: %s",
+            joint_names[i].c_str());
+          continue;
+        }
+
+        const size_t index = static_cast<size_t>(std::distance(current_joint_names_.begin(), it));
+        if (index < current_joint_positions_.size()) {
+          current_joint_positions_[index] = positions[i];
+        }
+      }
       has_joint_state_ = true;
     }
 
     auto msg = std::make_unique<sensor_msgs::msg::JointState>();
     msg->header.stamp = this->now();
-    msg->name = joint_names;
-    msg->position = positions;
-    msg->velocity.resize(positions.size(), 0.0);
-    msg->effort.resize(positions.size(), 0.0);
+    msg->name = current_joint_names_;
+    msg->position = current_joint_positions_;
+    msg->velocity.resize(current_joint_positions_.size(), 0.0);
+    msg->effort.resize(current_joint_positions_.size(), 0.0);
 
     joint_state_pub_->publish(std::move(msg));
   }

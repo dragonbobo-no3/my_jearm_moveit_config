@@ -1,4 +1,4 @@
-# OMPL Planning Configuration for jearm
+# OMPL Planning Configuration for dual-arm model
 planning_plugin: ompl_interface/OMPLPlanner
 request_adapters: >-
   default_planning_request_adapters/AddTimeOptimalParameterization
@@ -11,7 +11,7 @@ request_adapters: >-
 start_state_max_bounds_error: 0.1
 
 # Planning group specific configuration
-jearm:
+left_arm:
   planner_configs:
     - RRTConnect
     - RRT
@@ -24,7 +24,43 @@ jearm:
   default_planner_config: RRTstar
   
   # Projection evaluator for sampling-based planners
-  projection_evaluator: joints(joint1,joint2,joint3)
+  projection_evaluator: joints(joint11,joint12,joint13)
+  
+  # Planning parameters
+  longest_valid_segment_fraction: 0.003
+  
+  # Planning time limits
+  planner_timeout: 10.0
+  
+  # Number of planning attempts
+  num_planning_attempts: 10
+
+right_arm:
+  planner_configs:
+    - RRTConnect
+    - RRT
+    - RRTstar
+    - TRRT
+    - PRM
+    - PRMstar
+  
+  default_planner_config: RRTstar
+  projection_evaluator: joints(joint21,joint22,joint23)
+  longest_valid_segment_fraction: 0.003
+  planner_timeout: 10.0
+  num_planning_attempts: 10
+
+both_arms:
+  planner_configs:
+    - RRTConnect
+    - RRT
+    - RRTstar
+    - TRRT
+    - PRM
+    - PRMstar
+  
+  default_planner_config: RRTConnect
+  projection_evaluator: joints(joint11,joint12,joint21,joint22)
   
   # Planning parameters
   longest_valid_segment_fraction: 0.003

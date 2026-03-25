@@ -1,0 +1,23 @@
+moveit_controller_manager: moveit_simple_controller_manager/MoveItSimpleControllerManager
+
+trajectory_execution:
+  manage_controllers: true
+  allowed_execution_timeout_scaling: 10.0
+  execution_duration_monitoring: true
+
+moveit_simple_controller_manager:
+  controller_names:
+    - jearm_controller
+
+  jearm_controller:
+    type: FollowJointTrajectory
+    action_ns: follow_joint_trajectory
+    default: true
+    joints:
+      - joint1
+      - joint2
+      - joint3
+      - joint4
+      - joint5
+      - joint6
+      - joint7
