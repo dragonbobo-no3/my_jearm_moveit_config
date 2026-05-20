@@ -85,6 +85,7 @@ def generate_launch_description():
         executable="move_group",
         output="screen",
         parameters=[moveit_config_dual],
+        remappings=[("/compute_cartesian_path", "/compute_cartesian_path_raw")],
         condition=is_dual,
     )
 
@@ -93,7 +94,21 @@ def generate_launch_description():
         executable="move_group",
         output="screen",
         parameters=[moveit_config_single],
+        remappings=[("/compute_cartesian_path", "/compute_cartesian_path_raw")],
         condition=is_single,
+    )
+
+    cartesian_path_diagnoser = Node(
+        package="my_jearm_moveit_config",
+        executable="cartesian_path_diagnoser",
+        name="cartesian_path_diagnoser",
+        output="screen",
+        parameters=[{
+            'service_name': '/compute_cartesian_path',
+            'raw_service_name': '/compute_cartesian_path_raw',
+            'ik_service_name': '/compute_ik',
+            'state_validity_service_name': '/check_state_validity',
+        }],
     )
 
     ros2_control_node_dual = Node(
@@ -248,6 +263,7 @@ def generate_launch_description():
             default_value='dual',
             description='arm mode: dual or single',
         ),
+        cartesian_path_diagnoser,
         ros2_control_node_dual,
         ros2_control_node_single,
         delayed_controller_spawners_dual,

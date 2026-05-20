@@ -176,6 +176,7 @@ def generate_launch_description():
                 output='screen',
                 parameters=[fake_params_dual],
                 additional_env=runtime_env,
+                remappings=[('/compute_cartesian_path', '/compute_cartesian_path_raw')],
                 condition=fake_dual_condition,
             )
         ],
@@ -190,6 +191,7 @@ def generate_launch_description():
                 output='screen',
                 parameters=[fake_params_single],
                 additional_env=runtime_env,
+                remappings=[('/compute_cartesian_path', '/compute_cartesian_path_raw')],
                 condition=fake_single_condition,
             )
         ],
@@ -230,6 +232,20 @@ def generate_launch_description():
         condition=fake_single_with_rviz,
     )
 
+    cartesian_path_diagnoser = Node(
+        package='my_jearm_moveit_config',
+        executable='cartesian_path_diagnoser',
+        name='cartesian_path_diagnoser',
+        output='screen',
+        additional_env=runtime_env,
+        parameters=[{
+            'service_name': '/compute_cartesian_path',
+            'raw_service_name': '/compute_cartesian_path_raw',
+            'ik_service_name': '/compute_ik',
+            'state_validity_service_name': '/check_state_validity',
+        }],
+    )
+
     return LaunchDescription([
         DeclareLaunchArgument(
             "use_fake_executor",
@@ -246,6 +262,7 @@ def generate_launch_description():
             default_value="dual",
             description="arm mode: dual or single",
         ),
+        cartesian_path_diagnoser,
         real_stack,
         robot_state_publisher_dual,
         robot_state_publisher_single,
