@@ -47,7 +47,7 @@ left_arm:
     - TRRT
     - PRM
     - PRMstar
-  default_planner_config: RRTConnect
+  default_planner_config: RRTstar
   projection_evaluator: joints(joint11,joint12,joint13)
   longest_valid_segment_fraction: 0.001
   planner_timeout: 10.0
@@ -61,7 +61,7 @@ right_arm:
     - TRRT
     - PRM
     - PRMstar
-  default_planner_config: RRTConnect
+  default_planner_config: RRTstar
   projection_evaluator: joints(joint21,joint22,joint23)
   longest_valid_segment_fraction: 0.001
   planner_timeout: 10.0
@@ -75,10 +75,10 @@ both_arms:
     - TRRT
     - PRM
     - PRMstar
-  default_planner_config: RRTConnect
-  projection_evaluator: joints(joint11,joint12,joint21,joint22)
+  default_planner_config: RRTstar
+  projection_evaluator: joints(joint11,joint12,joint13,joint21,joint22,joint23)
   longest_valid_segment_fraction: 0.001
-  planner_timeout: 10.0
+  planner_timeout: 30.0
   num_planning_attempts: 10
 
 # Planner configurations
@@ -92,9 +92,9 @@ planner_configs:
     goal_bias: 0.05
   RRTstar:
     type: geometric::RRTstar
-    range: 0.0
+    range: 0.2
     goal_bias: 0.05
-    delay_collision_checking: 1
+    delay_collision_checking: 0
   TRRT:
     type: geometric::TRRT
     range: 0.0
