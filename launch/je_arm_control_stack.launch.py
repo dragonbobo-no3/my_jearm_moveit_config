@@ -246,6 +246,39 @@ def generate_launch_description():
         }],
     )
 
+    arm_state_logger_dual = Node(
+        package='my_jearm_moveit_config',
+        executable='arm_state_logger',
+        name='arm_state_logger',
+        output='screen',
+        additional_env=runtime_env,
+        parameters=[{
+            'base_link': 'base_link',
+            'ee_link': 'Link17',
+            'log_period_sec': 5.0,
+            'joint_names': [
+                'joint11', 'joint12', 'joint13', 'joint14', 'joint15', 'joint16', 'joint17',
+                'joint21', 'joint22', 'joint23', 'joint24', 'joint25', 'joint26', 'joint27'
+            ],
+        }],
+        condition=fake_dual_condition,
+    )
+
+    arm_state_logger_single = Node(
+        package='my_jearm_moveit_config',
+        executable='arm_state_logger',
+        name='arm_state_logger',
+        output='screen',
+        additional_env=runtime_env,
+        parameters=[{
+            'base_link': 'base_link',
+            'ee_link': 'Link7',
+            'log_period_sec': 5.0,
+            'joint_names': ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6', 'joint7'],
+        }],
+        condition=fake_single_condition,
+    )
+
     return LaunchDescription([
         DeclareLaunchArgument(
             "use_fake_executor",
@@ -268,6 +301,8 @@ def generate_launch_description():
         robot_state_publisher_single,
         static_tf_dual,
         static_tf_single,
+        arm_state_logger_dual,
+        arm_state_logger_single,
         fake_executor_dual,
         fake_executor_single,
         move_group_fake_dual,

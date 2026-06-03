@@ -6,6 +6,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(moveit_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
+find_package(action_msgs REQUIRED)
 find_package(control_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
@@ -18,10 +19,21 @@ add_executable(cartesian_path_diagnoser
   src/cartesian_path_diagnoser.cpp
 )
 
+add_executable(arm_state_logger
+  src/arm_state_logger.cpp
+)
+
 ament_target_dependencies(fake_trajectory_executor
   rclcpp
   rclcpp_action
   control_msgs
+  sensor_msgs
+  tf2_ros
+)
+
+ament_target_dependencies(arm_state_logger
+  action_msgs
+  rclcpp
   sensor_msgs
   tf2_ros
 )
@@ -41,6 +53,7 @@ install(DIRECTORY
 )
 
 install(TARGETS
+  arm_state_logger
   cartesian_path_diagnoser
   fake_trajectory_executor
   DESTINATION lib/${PROJECT_NAME}
