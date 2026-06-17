@@ -92,7 +92,7 @@
     </collision>
   </link>
   <joint name="joint12" type="revolute">
-    <origin xyz="-0.000300 0.001900 -0.000009" rpy="-1.576396 0.005000 -0.000028" />
+    <origin xyz="-0.000022 0.000819 -0.000010" rpy="-1.582783 0.008827 -0.000106" />
     <parent link="Link11" />
     <child link="Link12" />
     <axis xyz="0 0 1" />
@@ -121,7 +121,7 @@
     </collision>
   </link>
   <joint name="joint13" type="revolute">
-    <origin xyz="0.000067 -0.274597 0.001235" rpy="1.566296 0.006400 -0.000029" />
+    <origin xyz="0.000105 -0.271736 -0.001654" rpy="1.576885 0.024570 0.000150" />
     <parent link="Link12" />
     <child link="Link13" />
     <axis xyz="0 0 1" />
@@ -150,7 +150,7 @@
     </collision>
   </link>
   <joint name="joint14" type="revolute">
-    <origin xyz="-0.000009 0.001400 -0.000003" rpy="-1.572596 -0.001200 0.000002" />
+    <origin xyz="-0.007792 0.000809 0.000002" rpy="-1.568882 0.001903 0.000004" />
     <parent link="Link13" />
     <child link="Link14" />
     <axis xyz="0 0 1" />
@@ -179,7 +179,7 @@
     </collision>
   </link>
   <joint name="joint15" type="revolute">
-    <origin xyz="0.000009 -0.218700 -0.000153" rpy="1.571496 0.000900 0.000001" />
+    <origin xyz="0.008004 -0.219279 -0.000748" rpy="1.574210 0.019075 0.000065" />
     <parent link="Link14" />
     <child link="Link15" />
     <axis xyz="0 0 1" />
@@ -208,7 +208,7 @@
     </collision>
   </link>
   <joint name="joint16" type="revolute">
-    <origin xyz="0.000200 0.000400 -0.000008" rpy="-1.572597 0.034300 -0.000062" />
+    <origin xyz="-0.000127 0.000033 0.000000" rpy="-1.570240 0.023953 0.000013" />
     <parent link="Link15" />
     <child link="Link16" />
     <axis xyz="0 0 1" />
@@ -237,7 +237,7 @@
     </collision>
   </link>
   <joint name="joint17" type="revolute">
-    <origin xyz="-0.000500 -0.129600 -0.000163" rpy="1.571996 -0.014000 -0.000017" />
+    <origin xyz="-0.000340 -0.128509 0.000605" rpy="1.566088 -0.026226 0.000123" />
     <parent link="Link16" />
     <child link="Link17" />
     <axis xyz="0 0 1" />
