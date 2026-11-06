@@ -1,0 +1,19 @@
+# OFFLINE ONLY. Position bounds match LH_MK2.urdf, not verified hardware limits.
+# Velocity/acceleration caps below are conservative simulation settings only.
+default_velocity_scaling_factor: 0.1
+default_acceleration_scaling_factor: 0.1
+joint_limits:
+  joint1: &offline_limits
+    has_position_limits: true
+    min_position: -31.4
+    max_position: 31.4
+    has_velocity_limits: true
+    max_velocity: 0.5
+    has_acceleration_limits: true
+    max_acceleration: 1.0
+  joint2: *offline_limits
+  joint3: *offline_limits
+  joint4: *offline_limits
+  joint5: *offline_limits
+  joint6: *offline_limits
+  joint7: *offline_limits

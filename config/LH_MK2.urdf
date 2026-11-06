@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adapted from je_arm_v2_261105_LH_2/urdf/LH_MK2.urdf.
+     Geometry, origins, axes, inertia and joint limits are preserved.
+     OFFLINE COMPATIBILITY TEST ONLY: +/-31.4 rad limits are NOT validated
+     hardware limits. No ros2_control hardware plugin is provided intentionally.
+     Meshes are packaged locally; do not substitute first-generation meshes. -->
+<robot name="LH_JEARM">
+  <link name="base_link">
+    <inertial>
+      <origin xyz="-0.00022996 0.23024 0.52824" rpy="0 0 0"/>
+      <mass value="33.385"/>
+      <inertia ixx="1.1686" ixy="-9.8755E-08" ixz="1.6717E-07" iyy="1.2215" iyz="-2.2552E-09" izz="0.83965"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://my_jearm_moveit_config/config/meshes/lh_mk2/base_link.STL"/></geometry>
+      <material name="mk2_base"><color rgba="1 1 1 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://my_jearm_moveit_config/config/meshes/lh_mk2/base_link.STL"/></geometry>
+    </collision>
+  </link>
+  <link name="Link1">
+    <inertial>
+      <origin xyz="8.61680395432551E-05 0.0026582415252665 -0.0236996505466769" rpy="0 0 0"/>
+      <mass value="0.0622249107673682"/>
+      <inertia ixx="7.40731398164115E-05" ixy="-1.61520699658696E-07" ixz="-1.09884973390605E-07" iyy="7.87791265869239E-05" iyz="-2.63623466083199E-06" izz="7.52443932782679E-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://my_jearm_moveit_config/config/meshes/lh_mk2/Left_Link1.STL"/></geometry>
+      <material name="mk2_arm"><color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://my_jearm_moveit_config/config/meshes/lh_mk2/Left_Link1.STL"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint1" type="revolute">
+    <origin xyz="0.3001 0.23 1.301" rpy="3.14159265 -1.5708 0"/>
+    <parent link="base_link"/><child link="Link1"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-31.4" upper="31.4" effort="100" velocity="3.98"/>
+  </joint>
+  <link name="Link2">
+    <inertial>
+      <origin xyz="-2.2998748572256E-05 -0.060936811448488 0.000614657279387032" rpy="0 0 0"/>
+      <mass value="0.181400232354517"/>
+      <inertia ixx="0.000482160859239961" ixy="-3.69855945633484E-09" ixz="5.98977269951294E-08" iyy="0.000250677803972582" iyz="-9.79501309536066E-05" izz="0.000443667711274544"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://my_jearm_moveit_config/config/meshes/lh_mk2/Left_Link2.STL"/></geometry>
+      <material name="mk2_arm"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://my_jearm_moveit_config/config/meshes/lh_mk2/Left_Link2.STL"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint2" type="revolute">
+    <origin xyz="0 0 0" rpy="-1.5708 0 0"/>
+    <parent link="Link1"/><child link="Link2"/>
+    <axis xyz="6.7032E-05 0 1"/>
+    <limit lower="-31.4" upper="31.4" effort="100" velocity="3.98"/>
+  </joint>
+  <link name="Link3">
+    <inertial>
+      <origin xyz="-0.00458096023031807 -0.000859034416407001 -0.0421999462290227" rpy="0 0 0"/>
+      <mass value="0.1517035224747"/>
+      <inertia ixx="0.000361713742019292" ixy="-1.14348321623651E-06" ixz="4.3484797533665E-05" iyy="0.000384226192843692" iyz="4.4203778230727E-06" izz="0.000168570190990878"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://my_jearm_moveit_config/config/meshes/lh_mk2/Left_Link3.STL"/></geometry>
+      <material name="mk2_arm"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://my_jearm_moveit_config/config/meshes/lh_mk2/Left_Link3.STL"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint3" type="revolute">
+    <origin xyz="0 -0.26764 0" rpy="1.5708 0 0"/>
+    <parent link="Link2"/><child link="Link3"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-31.4" upper="31.4" effort="100" velocity="5.55"/>
+  </joint>
+  <link name="Link4">
+    <inertial>
+      <origin xyz="0.00844094481180657 -0.0475501179411504 -0.00135943056661625" rpy="0 0 0"/>
+      <mass value="0.0953602859099257"/>
+      <inertia ixx="0.00017187761623162" ixy="1.64405051773531E-05" ixz="-6.14617900585224E-06" iyy="8.44345858174809E-05" iyz="4.00892977518437E-05" izz="0.00015654540396249"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://my_jearm_moveit_config/config/meshes/lh_mk2/Left_Link4.STL"/></geometry>
+      <material name="mk2_arm"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://my_jearm_moveit_config/config/meshes/lh_mk2/Left_Link4.STL"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint4" type="revolute">
+    <origin xyz="-0.015 0 0" rpy="-1.5708 0 0"/>
+    <parent link="Link3"/><child link="Link4"/>
+    <axis xyz="-6.7032E-05 0 -1"/>
+    <limit lower="-31.4" upper="31.4" effort="100" velocity="5.55"/>
+  </joint>
+  <link name="Link5">
+    <inertial>
+      <origin xyz="-2.41325565403239E-06 0.0349192991600773 0.000665079518486433" rpy="0 0 0"/>
+      <mass value="0.00750499143804112"/>
+      <inertia ixx="1.90881077975028E-06" ixy="-1.33807283174102E-10" ixz="-1.94832913944771E-11" iyy="3.90316284755621E-06" iyz="1.19573297881051E-08" izz="2.04614670934465E-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://my_jearm_moveit_config/config/meshes/lh_mk2/Left_Link5.STL"/></geometry>
+      <material name="mk2_arm"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://my_jearm_moveit_config/config/meshes/lh_mk2/Left_Link5.STL"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint5" type="revolute">
+    <origin xyz="0.015 -0.2026 0" rpy="1.5708 0 0"/>
+    <parent link="Link4"/><child link="Link5"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-31.4" upper="31.4" effort="100" velocity="5.55"/>
+  </joint>
+  <link name="Link6">
+    <inertial>
+      <origin xyz="-7.22196742852788E-07 -0.0511482055472128 -0.00735405160460711" rpy="0 0 0"/>
+      <mass value="0.0471099621602048"/>
+      <inertia ixx="6.61421634289224E-05" ixy="-9.71600198913375E-10" ixz="7.35042054218317E-10" iyy="3.90746627317742E-05" iyz="1.49641024544368E-05" izz="6.01289358328606E-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://my_jearm_moveit_config/config/meshes/lh_mk2/Left_Link6.STL"/></geometry>
+      <material name="mk2_arm"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://my_jearm_moveit_config/config/meshes/lh_mk2/Left_Link6.STL"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint6" type="revolute">
+    <origin xyz="0 0 0" rpy="-1.5708 0 0"/>
+    <parent link="Link5"/><child link="Link6"/>
+    <axis xyz="-6.7032E-05 0 -1"/>
+    <limit lower="-31.4" upper="31.4" effort="100" velocity="5.55"/>
+  </joint>
+  <link name="Link7">
+    <inertial>
+      <origin xyz="-0.00021350110884627 7.56339964214092E-07 0.0771021180117414" rpy="0 0 0"/>
+      <mass value="0.228681871613407"/>
+      <inertia ixx="0.00012677250572367" ixy="4.29897942991778E-07" ixz="-1.21455055505178E-07" iyy="7.50468785518438E-05" iyz="4.18228793601539E-11" izz="0.000133647951759169"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://my_jearm_moveit_config/config/meshes/lh_mk2/Left_Link7.STL"/></geometry>
+      <material name="mk2_arm"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://my_jearm_moveit_config/config/meshes/lh_mk2/Left_Link7.STL"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint7" type="revolute">
+    <origin xyz="0 -0.095 0" rpy="1.5708 0 0"/>
+    <parent link="Link6"/><child link="Link7"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-31.4" upper="31.4" effort="100" velocity="5.86"/>
+  </joint>
+</robot>

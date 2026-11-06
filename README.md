@@ -9,6 +9,54 @@ L_JEARM 的 MoveIt2 配置包（ROS 2 Humble）。
 - Fake 执行模式（不依赖 `ros2_control`）
 - 常用清理/重启脚本（推荐 `clean_restart.sh`）
 
+## 二代左臂 LH_MK2（feat/lh-mk2 分支）
+
+二代模型使用独立入口 [launch/lh_mk2.launch.py](launch/lh_mk2.launch.py)。
+原有一代单臂、双臂入口和清理脚本保持不变，**不会自动切换为二代**。
+
+构建并加载工作空间后，使用 `ros2 launch my_jearm_moveit_config lh_mk2.launch.py`。
+无界面验证可追加 `start_rviz:=false`。请在**没有真机控制器的独立 ROS_DOMAIN_ID**
+中运行；模拟器仍使用 `/joint_states` 和 `/jearm_controller/follow_joint_trajectory`，
+不能与真机或一代仿真栈同时运行在同一 ROS domain。
+
+配置与资源：
+- [config/LH_MK2.urdf](config/LH_MK2.urdf)：来自用户指定的 `LH_MK2` 导出模型；
+  保留几何、惯量、关节原点和轴向，仅调整网格 URI 与材质命名。
+- [config/meshes/lh_mk2](config/meshes/lh_mk2)：随包安装的八个 STL 网格，
+  不再依赖移动硬盘，不覆盖一代网格。
+- [config/LH_MK2.srdf](config/LH_MK2.srdf)：`jearm` 规划组，
+  `base_link` → `Link7`，关节 `joint1`～`joint7`；`zero` 仅代表 CAD 零姿态。
+  只屏蔽实际相邻连杆碰撞，其余自碰撞检查保持启用。
+- [config/joint_limits_mk2.yaml](config/joint_limits_mk2.yaml)：专属离线规划限制，
+  不复用一代位置限位。仿真速度上限 0.5 rad/s、加速度上限 1.0 rad/s²，
+  默认缩放均为 0.1；这些都不是已验证的硬件参数。
+- [config/ompl_planning_mk2.yaml](config/ompl_planning_mk2.yaml)：OMPL / RRTConnect，
+  复用已有单臂 KDL 求解器和模拟轨迹控制器映射。
+
+**当前仅适配离线规划和模拟执行，不支持真机。** 源模型明确注明所有关节的
+±31.4 rad 范围仅供离线兼容测试，因此按原样保留，不猜测二代机械限位，
+也不移植一代 `JeZmqSystemHardware`。`use_fake_executor:=false` 会在启动节点前报错。
+
+真机适配前仍需确认：七轴实际位置/速度/力矩限制、零位偏置、方向符号、
+驱动关节顺序与通信配置、工具 TCP 相对 `Link7` 的变换，以及二代模型的自碰撞矩阵。
+不要为使规划通过而直接屏蔽非相邻碰撞。
+
+静态配置回归检查见 [tests/test_lh_mk2_config.py](tests/test_lh_mk2_config.py)。
+
+2026-11-06 验证记录：
+- 7 项静态配置检查通过；源模型关节原点、轴向、惯量、限位逐项一致，八个网格 SHA-256 一致。
+- 在隔离域 `217` 中复用已有安装的 C++ 可执行程序，使用源目录资源进行无界面验证；
+  未启用任何真机驱动，拒绝真机模式的检查通过。
+- 正运动学成功，CAD 零姿态无自碰撞；`Link7` 零位位置约为
+  `(0.865340, 0.229998, 1.301002)` m，相对 `base_link`。
+- `joint1` 目标 0.1 rad 的 OMPL 规划成功（8 个轨迹点），模拟执行器返回成功。
+  此项不等于验证了所有工作空间、笛卡尔路径或真机运动。
+- 本机 `move_group` 初始化约需 14 秒；关闭时观察到系统 MoveIt 2.5.9 / rclcpp
+  析构阶段段错误（退出码 -11），原因尚未定位，不应将本次测试视为无错误退出。
+  还存在 KDL 根连杆惯量警告、未配置 Octomap 三维传感器提示。
+- VS Code 的 CMake 构建入口无法完成项目配置，尚未完成本次改动的重新构建、安装及
+  RViz 图形验证；现有安装中还没有二代新增资源，需完成正常构建安装后再使用包启动命令。
+
 ---
 
 ## 1. 目录结构
