@@ -3,6 +3,9 @@
 #include <chrono>
 #include <cmath>
 #include <future>
+#include <iomanip>
+#include <iterator>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -32,6 +35,12 @@ public:
       "state_validity_service_name", "/check_state_validity");
     service_timeout_sec_ = this->declare_parameter<double>("service_timeout_sec", 3.0);
     ik_timeout_sec_ = this->declare_parameter<double>("ik_timeout_sec", 0.05);
+    seed_probe_enabled_ = this->declare_parameter<bool>("seed_probe_enabled", true);
+    seed_probe_joint_names_ = this->declare_parameter<std::vector<std::string>>(
+      "seed_probe_joint_names",
+      {"joint11", "joint13", "joint15", "joint17"});
+    seed_probe_offsets_rad_ = this->declare_parameter<std::vector<double>>(
+      "seed_probe_offsets_rad", {-0.05, 0.05, -0.10, 0.10});
 
     service_callback_group_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
     client_callback_group_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
@@ -236,6 +245,7 @@ private:
         sample_count,
         errorCodeToString(unconstrained.error_code).c_str());
       logPose(pose);
+      probeAlternateSeeds(seed_state, request, pose, waypoint_index, sample_index, sample_count);
       return false;
     }
 
@@ -287,6 +297,101 @@ private:
     }
 
     return true;
+  }
+
+  void probeAlternateSeeds(
+    const moveit_msgs::msg::RobotState & seed_state,
+    const moveit_msgs::srv::GetCartesianPath::Request & request,
+    const geometry_msgs::msg::Pose & pose,
+    size_t waypoint_index,
+    int sample_index,
+    int sample_count)
+  {
+    if (!seed_probe_enabled_ || seed_probe_joint_names_.empty() || seed_probe_offsets_rad_.empty()) {
+      return;
+    }
+
+    size_t attempted = 0;
+    size_t safe_solutions = 0;
+    double best_distance = std::numeric_limits<double>::infinity();
+    std::string best_description;
+
+    for (const auto & joint_name : seed_probe_joint_names_) {
+      const auto joint_it = std::find(
+        seed_state.joint_state.name.begin(), seed_state.joint_state.name.end(), joint_name);
+      if (joint_it == seed_state.joint_state.name.end()) {
+        continue;
+      }
+
+      const size_t joint_index = static_cast<size_t>(
+        std::distance(seed_state.joint_state.name.begin(), joint_it));
+      if (joint_index >= seed_state.joint_state.position.size()) {
+        continue;
+      }
+
+      for (const double offset : seed_probe_offsets_rad_) {
+        moveit_msgs::msg::RobotState candidate_seed = seed_state;
+        candidate_seed.joint_state.position[joint_index] += offset;
+        ++attempted;
+
+        const auto attempt = solveIk(
+          candidate_seed,
+          request,
+          pose,
+          request.path_constraints,
+          request.avoid_collisions);
+        if (!attempt.success) {
+          continue;
+        }
+
+        const auto validity = checkState(
+          attempt.solution,
+          request.group_name,
+          moveit_msgs::msg::Constraints{});
+        if (!validity.valid) {
+          RCLCPP_WARN(
+            this->get_logger(),
+            "Alternate IK seed %s%+.3frad reached waypoint %zu sample %d/%d but was rejected by state validity",
+            joint_name.c_str(),
+            offset,
+            waypoint_index,
+            sample_index,
+            sample_count);
+          continue;
+        }
+
+        const double distance = jointDistance(seed_state, attempt.solution);
+        ++safe_solutions;
+        if (distance < best_distance) {
+          best_distance = distance;
+          std::ostringstream stream;
+          stream << joint_name << (offset >= 0.0 ? "+" : "") << std::fixed
+                 << std::setprecision(3) << offset << "rad";
+          best_description = stream.str();
+        }
+      }
+    }
+
+    if (safe_solutions == 0) {
+      RCLCPP_WARN(
+        this->get_logger(),
+        "Alternate-seed probe found no collision-free IK solution for waypoint %zu sample %d/%d after %zu deterministic attempts",
+        waypoint_index,
+        sample_index,
+        sample_count,
+        attempted);
+      return;
+    }
+
+    RCLCPP_WARN(
+      this->get_logger(),
+      "Alternate-seed probe found %zu collision-free IK solution(s) for waypoint %zu sample %d/%d; nearest branch used seed %s (joint distance=%.4frad). This is diagnostic only; no trajectory was changed.",
+      safe_solutions,
+      waypoint_index,
+      sample_index,
+      sample_count,
+      best_description.c_str(),
+      best_distance);
   }
 
   IkAttempt solveIk(
@@ -343,6 +448,37 @@ private:
     result.contacts = response->contacts;
     result.constraint_results = response->constraint_result;
     return result;
+  }
+
+  static double jointDistance(
+    const moveit_msgs::msg::RobotState & from,
+    const moveit_msgs::msg::RobotState & to)
+  {
+    double squared_distance = 0.0;
+    size_t common_joint_count = 0;
+
+    for (size_t from_index = 0; from_index < from.joint_state.name.size(); ++from_index) {
+      if (from_index >= from.joint_state.position.size()) {
+        continue;
+      }
+
+      const auto to_it = std::find(
+        to.joint_state.name.begin(), to.joint_state.name.end(), from.joint_state.name[from_index]);
+      if (to_it == to.joint_state.name.end()) {
+        continue;
+      }
+
+      const size_t to_index = static_cast<size_t>(std::distance(to.joint_state.name.begin(), to_it));
+      if (to_index >= to.joint_state.position.size()) {
+        continue;
+      }
+
+      const double delta = to.joint_state.position[to_index] - from.joint_state.position[from_index];
+      squared_distance += delta * delta;
+      ++common_joint_count;
+    }
+
+    return common_joint_count == 0 ? std::numeric_limits<double>::infinity() : std::sqrt(squared_distance);
   }
 
   static bool hasConstraintViolation(const StateCheck & state)
@@ -521,6 +657,9 @@ private:
   std::string state_validity_service_name_;
   double service_timeout_sec_;
   double ik_timeout_sec_;
+  bool seed_probe_enabled_;
+  std::vector<std::string> seed_probe_joint_names_;
+  std::vector<double> seed_probe_offsets_rad_;
 
   rclcpp::Client<moveit_msgs::srv::GetCartesianPath>::SharedPtr cartesian_client_;
   rclcpp::Client<moveit_msgs::srv::GetPositionIK>::SharedPtr ik_client_;

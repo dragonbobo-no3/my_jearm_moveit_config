@@ -1,5 +1,5 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, SetEnvironmentVariable, TimerAction
 from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import EnvironmentVariable, LaunchConfiguration, PythonExpression
@@ -21,6 +21,7 @@ def generate_launch_description():
     use_fake_executor = LaunchConfiguration("use_fake_executor")
     start_rviz = LaunchConfiguration("start_rviz")
     arm_mode = LaunchConfiguration("arm_mode")
+    controlled_arm = LaunchConfiguration("controlled_arm")
 
     pkg_share = get_package_share_directory("my_jearm_moveit_config")
 
@@ -145,6 +146,7 @@ def generate_launch_description():
         executable='fake_trajectory_executor',
         parameters=[{
             'ee_link': 'Link17',
+            'controlled_arm': controlled_arm,
             'joint_names': [
                 'joint11', 'joint12', 'joint13', 'joint14', 'joint15', 'joint16', 'joint17',
                 'joint21', 'joint22', 'joint23', 'joint24', 'joint25', 'joint26', 'joint27'
@@ -160,6 +162,7 @@ def generate_launch_description():
         executable='fake_trajectory_executor',
         parameters=[{
             'ee_link': 'Link7',
+            'controlled_arm': controlled_arm,
             'joint_names': ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6', 'joint7']
         }],
         output='screen',
@@ -282,7 +285,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             "use_fake_executor",
-            default_value="true",
+            default_value="false",
             description="true = fake mode (no ros2_control); false = real hardware",
         ),
         DeclareLaunchArgument(
@@ -294,6 +297,16 @@ def generate_launch_description():
             "arm_mode",
             default_value="dual",
             description="arm mode: dual or single",
+        ),
+        DeclareLaunchArgument(
+            "controlled_arm",
+            default_value="both",
+            description="Arm command output: both, left, or right",
+            choices=["both", "left", "right"],
+        ),
+        SetEnvironmentVariable(
+            name="JE_ARM_CONTROLLED_ARM",
+            value=controlled_arm,
         ),
         cartesian_path_diagnoser,
         real_stack,

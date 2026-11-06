@@ -88,8 +88,8 @@
     name="joint1"
     type="revolute">
     <origin
-      xyz="0 0 0"
-      rpy="0 0 0" />
+      xyz="0.000000 0.000000 0.000000"
+      rpy="0.000000 -0.000000 0.000000" />
     <parent
       link="base_link" />
     <child
@@ -97,10 +97,10 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-3.14"
-      upper="3.14"
+      lower="-5.1400"
+      upper="5.1400"
       effort="100"
-      velocity="3.14" />
+      velocity="3.9800" />
   </joint>
   <link
     name="Link2">
@@ -146,8 +146,8 @@
     name="joint2"
     type="revolute">
     <origin
-      xyz="-0.000022 0.000819 -0.000010"
-      rpy="-1.582783 0.008827 -0.000106" />
+      xyz="-0.000700 0.001700 0.000001"
+      rpy="-1.573196 0.007100 -0.000017" />
     <parent
       link="Link1" />
     <child
@@ -155,10 +155,10 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-1.85"
-      upper="1.8"
+      lower="-1.8356"
+      upper="1.8220"
       effort="100"
-      velocity="3.14" />
+      velocity="3.9800" />
   </joint>
   <link
     name="Link3">
@@ -204,8 +204,8 @@
     name="joint3"
     type="revolute">
     <origin
-      xyz="0.000105 -0.271736 -0.001654"
-      rpy="1.576885 0.024570 0.000150" />
+      xyz="0.000500 -0.273097 -0.001246"
+      rpy="1.575299 0.035000 0.000158" />
     <parent
       link="Link2" />
     <child
@@ -213,10 +213,10 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-2.96"
-      upper="2.96"
+      lower="-2.9600"
+      upper="2.9600"
       effort="100"
-      velocity="3.14" />
+      velocity="5.5500" />
   </joint>
   <link
     name="Link4">
@@ -262,8 +262,8 @@
     name="joint4"
     type="revolute">
     <origin
-      xyz="-0.007792 0.000809 0.000002"
-      rpy="-1.568882 0.001903 0.000004" />
+      xyz="-0.007699 0.001100 0.000109"
+      rpy="-1.572797 0.014500 -0.000029" />
     <parent
       link="Link3" />
     <child
@@ -271,10 +271,10 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-2.26"
-      upper="1.82"
+      lower="-2.2999"
+      upper="1.7904"
       effort="100"
-      velocity="3.14" />
+      velocity="5.5500" />
   </joint>
   <link
     name="Link5">
@@ -320,8 +320,8 @@
     name="joint5"
     type="revolute">
     <origin
-      xyz="0.008004 -0.219279 -0.000748"
-      rpy="1.574210 0.019075 0.000065" />
+      xyz="0.008800 -0.219397 -0.001140"
+      rpy="1.576096 -0.002600 -0.000014" />
     <parent
       link="Link4" />
     <child
@@ -329,10 +329,10 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-2.96"
-      upper="2.96"
+      lower="-2.9600"
+      upper="2.9600"
       effort="100"
-      velocity="3.14" />
+      velocity="5.5500" />
   </joint>
   <link
     name="Link6">
@@ -378,8 +378,8 @@
     name="joint6"
     type="revolute">
     <origin
-      xyz="-0.000127 0.000033 0.000000"
-      rpy="-1.570240 0.023953 0.000013" />
+      xyz="0.000100 0.000100 -0.000003"
+      rpy="-1.572997 0.023300 -0.000051" />
     <parent
       link="Link5" />
     <child
@@ -387,10 +387,10 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-1.6"
-      upper="1.55"
+      lower="-1.5981"
+      upper="1.5442"
       effort="100"
-      velocity="3.14" />
+      velocity="5.5500" />
   </joint>
   <link
     name="Link7">
@@ -436,8 +436,8 @@
     name="joint7"
     type="revolute">
     <origin
-      xyz="-0.000340 -0.128509 0.000605"
-      rpy="1.566088 -0.026226 0.000123" />
+      xyz="0.000200 -0.128900 -0.000190"
+      rpy="1.572297 -0.019000 -0.000029" />
     <parent
       link="Link6" />
     <child
@@ -445,10 +445,10 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-2.96"
-      upper="2.96"
+      lower="-2.9600"
+      upper="2.9600"
       effort="100"
-      velocity="3.14" />
+      velocity="5.8600" />
   </joint>
 
   <ros2_control name="jearm_system" type="system">

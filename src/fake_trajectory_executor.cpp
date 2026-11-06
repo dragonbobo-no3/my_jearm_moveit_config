@@ -31,6 +31,13 @@ public:
       "joint21", "joint22", "joint23", "joint24", "joint25", "joint26", "joint27"};
     const auto configured_joint_names = this->declare_parameter<std::vector<std::string>>(
       "joint_names", default_joint_names);
+    controlled_arm_ = this->declare_parameter<std::string>("controlled_arm", "both");
+    if (controlled_arm_ != "both" && controlled_arm_ != "left" && controlled_arm_ != "right") {
+      RCLCPP_WARN(
+        this->get_logger(), "Invalid controlled_arm='%s'; falling back to 'both'",
+        controlled_arm_.c_str());
+      controlled_arm_ = "both";
+    }
 
     tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
@@ -68,8 +75,8 @@ public:
 
     RCLCPP_INFO(
       this->get_logger(),
-      "Fake Trajectory Executor initialized for jearm_controller (%zu joints, TF: %s -> %s)",
-      current_joint_names_.size(), base_link_.c_str(), ee_link_.c_str());
+      "Fake Trajectory Executor initialized for jearm_controller (%zu joints, controlled_arm=%s, TF: %s -> %s)",
+      current_joint_names_.size(), controlled_arm_.c_str(), base_link_.c_str(), ee_link_.c_str());
   }
 
 private:
@@ -82,6 +89,7 @@ private:
   bool has_joint_state_ = false;
   std::string base_link_;
   std::string ee_link_;
+  std::string controlled_arm_;
   std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
   std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
 
@@ -383,6 +391,14 @@ private:
     {
       std::lock_guard<std::mutex> lock(joint_state_mutex_);
       for (size_t i = 0; i < joint_names.size(); ++i) {
+        const bool is_right_joint =
+          (joint_names[i].size() == 7 && joint_names[i].rfind("joint2", 0) == 0) ||
+          joint_names[i].rfind("r_joint", 0) == 0;
+        if ((controlled_arm_ == "left" && is_right_joint) ||
+          (controlled_arm_ == "right" && !is_right_joint)) {
+          continue;
+        }
+
         const auto it = std::find(current_joint_names_.begin(), current_joint_names_.end(), joint_names[i]);
         if (it == current_joint_names_.end()) {
           RCLCPP_WARN(
