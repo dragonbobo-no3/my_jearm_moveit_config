@@ -1,25 +1,48 @@
-"""Second-generation left arm: isolated, offline-only MoveIt stack."""
+"""Second-generation left arm: real feedback default, explicit offline/control."""
 
 from pathlib import Path
 
 import yaml
-from ament_index_python.packages import get_package_share_directory
+from ament_index_python.packages import get_package_prefix, get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, LogInfo, OpaqueFunction, TimerAction
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, LogInfo, OpaqueFunction, TimerAction
 from launch.conditions import IfCondition
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
 def _launch_setup(context):
-    # Fail before creating any nodes if a caller requests real hardware.
-    if LaunchConfiguration('use_fake_executor').perform(context).lower() != 'true':
-        raise RuntimeError(
-            'LH_MK2 is offline-only: hardware limits, zero offsets, joint signs '
-            'and driver mapping must be verified before enabling real hardware.'
-        )
-
     share = Path(get_package_share_directory('my_jearm_moveit_config'))
+    if LaunchConfiguration('use_fake_executor').perform(context).lower() != 'true':
+        prefix = Path(get_package_prefix('my_jearm_moveit_config'))
+        required = [share / relative for relative in (
+            'launch/lh_mk2_hardware.launch.py', 'launch/lh_mk2_support.py',
+            'config/hardware_mk2.yaml',
+        )]
+        required.append(prefix / 'lib/my_jearm_moveit_config/mk2_state_bridge.py')
+        missing = [str(path) for path in required if not path.is_file()]
+        if missing:
+            raise RuntimeError(
+                'MK2 hardware resources are not installed: ' + ', '.join(missing) +
+                '. Rebuild/install my_jearm_moveit_config and source the workspace setup. '
+                'An existing launch-file symlink does not install newly added files.'
+            )
+        names = ('hardware_mode', 'confirm_enable', 'start_rviz', 'robot_ip',
+                 'state_port', 'command_port', 'state_timeout', 'startup_timeout')
+        mode = LaunchConfiguration('hardware_mode').perform(context)
+        message = (
+            'LH_MK2 SDK FEEDBACK: same Robot0 State protocol for physical or SDK simulation; no enable or motion. '
+            'For offline CAD simulation, set use_fake_executor:=true.'
+            if mode == 'feedback' else
+            'LH_MK2 EXPLICIT CONTROL: command-capability preflight and confirm_enable '
+            'are required; driver activation can enable the arm.'
+        )
+        return [LogInfo(msg=message), IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(str(share / 'launch/lh_mk2_hardware.launch.py')),
+            launch_arguments={name: LaunchConfiguration(name) for name in names}.items(),
+        )]
+
     config = share / 'config'
 
     def load_yaml(name):
@@ -98,8 +121,15 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('start_rviz', default_value='true', choices=['true', 'false']),
         DeclareLaunchArgument(
-            'use_fake_executor', default_value='true', choices=['true', 'false'],
-            description='MK2 currently supports offline fake execution only.',
+            'use_fake_executor', default_value='false', choices=['true', 'false'],
+            description='false (default): real SDK feedback; true: explicit offline CAD simulation.',
         ),
+        DeclareLaunchArgument('hardware_mode', default_value='feedback', choices=['feedback', 'control']),
+        DeclareLaunchArgument('confirm_enable', default_value='false', choices=['true', 'false']),
+        DeclareLaunchArgument('robot_ip', default_value='192.168.0.99'),
+        DeclareLaunchArgument('state_port', default_value='8000'),
+        DeclareLaunchArgument('command_port', default_value='8001'),
+        DeclareLaunchArgument('state_timeout', default_value='5.0'),
+        DeclareLaunchArgument('startup_timeout', default_value='15.0'),
         OpaqueFunction(function=_launch_setup),
     ])

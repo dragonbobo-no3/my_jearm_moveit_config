@@ -59,4 +59,8 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
+install(PROGRAMS scripts/mk2_state_bridge.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_package()

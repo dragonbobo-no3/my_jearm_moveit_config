@@ -1,0 +1,281 @@
+/* Original, SDK-independent command validator/state machine. */
+#include "mk2_control_core.h"
+#include <arpa/inet.h>
+#include <ctype.h>
+#include <json-c/json.h>
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
+
+static struct json_object *strict_json(const char *text, size_t length)
+{
+    if (!text || !length || length > MK2_FRAME_MAX || memchr(text, '\0', length)) return NULL;
+    struct json_tokener *parser = json_tokener_new_ex(12);
+    if (!parser) return NULL;
+    json_tokener_set_flags(parser, JSON_TOKENER_STRICT);
+    struct json_object *value = json_tokener_parse_ex(parser, text, (int)length);
+    enum json_tokener_error error = json_tokener_get_error(parser);
+    size_t end = json_tokener_get_parse_end(parser);
+    while (end < length && isspace((unsigned char)text[end])) end++;
+    if (error != json_tokener_success || end != length ||
+        !value || json_object_get_type(value) != json_type_object) {
+        if (value) json_object_put(value);
+        value = NULL;
+    }
+    json_tokener_free(parser);
+    return value;
+}
+
+static struct json_object *field(struct json_object *object, const char *key)
+{
+    struct json_object *value = NULL;
+    if (!object || !json_object_object_get_ex(object, key, &value)) return NULL;
+    return value;
+}
+static bool number(struct json_object *value, double *output)
+{
+    if (!value || (json_object_get_type(value) != json_type_int &&
+                   json_object_get_type(value) != json_type_double)) return false;
+    *output = json_object_get_double(value);
+    return isfinite(*output);
+}
+static bool array7(struct json_object *value, double *output)
+{
+    if (!value || json_object_get_type(value) != json_type_array ||
+        json_object_array_length(value) != MK2_AXES) return false;
+    for (size_t i = 0; i < MK2_AXES; i++)
+        if (!number(json_object_array_get_idx(value, i), output + i)) return false;
+    return true;
+}
+static bool finite_sample(const struct mk2_sample *sample)
+{
+    if (!sample || !sample->valid) return false;
+    for (int i = 0; i < MK2_AXES; i++) if (!isfinite(sample->joint[i])) return false;
+    return true;
+}
+static bool powered_healthy(const struct mk2_sample *sample)
+{
+    return finite_sample(sample) && sample->power == 1 && sample->driver_error == 0 &&
+           sample->move_error == 0 && sample->move_state >= 0 && sample->move_state != 7;
+}
+static bool policy_valid(const struct mk2_policy *p)
+{
+    if (!p || !isfinite(p->watchdog) || p->watchdog <= 0 || p->watchdog > 0.5 ||
+        !isfinite(p->first_timeout) || p->first_timeout < p->watchdog || p->first_timeout > 5 ||
+        !isfinite(p->min_dt) || !isfinite(p->max_dt) || p->min_dt < 0.001 ||
+        p->max_dt < p->min_dt || p->max_dt > 0.05 ||
+        !isfinite(p->clock_skew) || p->clock_skew <= 0 || p->clock_skew > 0.25 ||
+        !isfinite(p->first_hold_tolerance) || p->first_hold_tolerance <= 0 ||
+        p->first_hold_tolerance > 0.002 || !isfinite(p->following_tolerance) ||
+        p->following_tolerance < p->first_hold_tolerance || p->following_tolerance > 0.05 ||
+        !isfinite(p->servo_q) || !isfinite(p->servo_r) || p->servo_q <= 0 || p->servo_r <= 0)
+        return false;
+    for (int i = 0; i < MK2_AXES; i++)
+        if (!isfinite(p->lower[i]) || !isfinite(p->upper[i]) || p->lower[i] >= p->upper[i] ||
+            !isfinite(p->velocity[i]) || p->velocity[i] <= 0 || p->velocity[i] > 0.3 ||
+            !isfinite(p->acceleration[i]) || p->acceleration[i] <= 0 || p->acceleration[i] > 0.5)
+            return false;
+    return true;
+}
+int mk2_policy_parse(const char *text, size_t size, struct mk2_policy *p, char *error, size_t error_size)
+{
+    struct json_object *root = strict_json(text, size);
+    struct mk2_policy parsed = {0};
+    struct json_object *value, *limits;
+    struct in_addr address;
+    bool valid = root && json_object_object_length(root) == 16;
+    double version = 0, port = 0;
+    if (valid) valid = number(field(root, "version"), &version) && version == 1;
+    value = field(root, "allow_commands");
+    if (valid) valid = value && json_object_get_type(value) == json_type_boolean;
+    if (valid) parsed.allow_commands = json_object_get_boolean(value);
+    value = field(root, "command_host");
+    if (valid) valid = value && json_object_get_type(value) == json_type_string &&
+                       strlen(json_object_get_string(value)) < sizeof(parsed.command_host) &&
+                       inet_pton(AF_INET, json_object_get_string(value), &address) == 1;
+    if (valid) snprintf(parsed.command_host, sizeof(parsed.command_host), "%s", json_object_get_string(value));
+    if (valid) valid = number(field(root, "command_port"), &port) && port >= 1024 && port <= 65535 && floor(port) == port;
+    if (valid) parsed.command_port = (int)port;
+    if (valid) valid = number(field(root, "state_port"), &port) && port >= 1024 && port <= 65535 && floor(port) == port;
+    if (valid) parsed.state_port = (int)port;
+    value = field(root, "device_config_sha256");
+    if (valid) valid = value && json_object_get_type(value) == json_type_string && strlen(json_object_get_string(value)) == 64;
+    if (valid) {
+        snprintf(parsed.device_config_sha256, sizeof(parsed.device_config_sha256), "%s", json_object_get_string(value));
+        for (int i = 0; i < 64; i++) if (!isxdigit((unsigned char)parsed.device_config_sha256[i])) valid = false;
+    }
+#define READ_NUMBER(key, member) if (valid) valid = number(field(root, key), &parsed.member)
+    READ_NUMBER("watchdog_seconds", watchdog);
+    READ_NUMBER("first_command_timeout", first_timeout);
+    READ_NUMBER("min_dt", min_dt);
+    READ_NUMBER("max_dt", max_dt);
+    READ_NUMBER("clock_skew", clock_skew);
+    READ_NUMBER("first_hold_tolerance", first_hold_tolerance);
+    READ_NUMBER("following_tolerance", following_tolerance);
+    READ_NUMBER("servo_q", servo_q);
+    READ_NUMBER("servo_r", servo_r);
+#undef READ_NUMBER
+    limits = field(root, "limits");
+    if (valid) valid = limits && json_object_get_type(limits) == json_type_object && json_object_object_length(limits) == 4;
+    if (valid) valid = array7(field(limits, "lower"), parsed.lower) && array7(field(limits, "upper"), parsed.upper) &&
+                       array7(field(limits, "velocity"), parsed.velocity) && array7(field(limits, "acceleration"), parsed.acceleration);
+    valid = valid && policy_valid(&parsed);
+    if (root) json_object_put(root);
+    if (!valid || !p) {
+        if (error && error_size) snprintf(error, error_size, "Invalid control policy/schema or commissioning caps");
+        return -1;
+    }
+    *p = parsed;
+    return 0;
+}
+
+int mk2_core_init(struct mk2_core *core, const struct mk2_policy *policy, const struct mk2_io *io)
+{
+    if (!core || !policy_valid(policy) || !io || !io->start || !io->joint || !io->stop || !io->end) return -1;
+    memset(core, 0, sizeof(*core));
+    core->policy = *policy;
+    core->io = *io;
+    core->phase = policy->allow_commands ? MK2_READY : MK2_LOCKED;
+    return 0;
+}
+static bool sample_in_bounds(const struct mk2_core *core, const struct mk2_sample *sample)
+{
+    if (!powered_healthy(sample)) return false;
+    for (int i = 0; i < MK2_AXES; i++)
+        if (sample->joint[i] < core->policy.lower[i] || sample->joint[i] > core->policy.upper[i]) return false;
+    return true;
+}
+bool mk2_core_commands_available(const struct mk2_core *core, const struct mk2_sample *sample)
+{
+    return core->policy.allow_commands && sample_in_bounds(core, sample) &&
+           (core->phase == MK2_ACTIVE ||
+            ((core->phase == MK2_READY || core->phase == MK2_WAIT_FIRST) && sample->move_state == 0));
+}
+void mk2_core_stop(struct mk2_core *core, enum mk2_fault reason)
+{
+    if (core->owns_servo) {
+        int stop = core->io.stop(core->io.context);
+        int end = core->io.end(core->io.context);
+        if (!core->sdk_error) core->sdk_error = stop ? stop : end;
+        core->owns_servo = false;
+    }
+    core->fault = core->sdk_error ? MK2_SDK_ERROR : reason;
+    core->phase = core->fault == MK2_NO_FAULT ? MK2_STOPPED : MK2_FAULT;
+}
+static int reject(struct mk2_core *core, enum mk2_fault reason)
+{
+    core->rejected_frames++;
+    if (core->owns_servo || core->phase == MK2_WAIT_FIRST) mk2_core_stop(core, reason);
+    return -1;
+}
+void mk2_core_tick(struct mk2_core *core, double now, const struct mk2_sample *sample)
+{
+    if (!core->owns_servo && core->phase != MK2_WAIT_FIRST) return;
+    if (!isfinite(now) || now < core->last_receive) mk2_core_stop(core, MK2_CLOCK_ERROR);
+    else if (!sample_in_bounds(core, sample) || (core->phase == MK2_WAIT_FIRST && sample->move_state != 0))
+        mk2_core_stop(core, MK2_STATE_ERROR);
+    else if (now - core->last_receive > (core->phase == MK2_WAIT_FIRST ? core->policy.first_timeout : core->policy.watchdog))
+        mk2_core_stop(core, MK2_WATCHDOG);
+}
+/* Protocol field names must be literal ASCII, exactly once. Combined with exact
+ * object/field counts below this rejects duplicate keys and escaped key aliases
+ * instead of relying on json-c's otherwise last-key-wins behavior. */
+static bool once(const char *text, size_t length, const char *literal)
+{
+    size_t n = strlen(literal), count = 0;
+    for (size_t i = 0; i + n <= length; i++) if (!memcmp(text + i, literal, n)) count++;
+    return count == 1;
+}
+int mk2_core_handle(struct mk2_core *core, const char *frame, size_t length, double now, const struct mk2_sample *sample)
+{
+    mk2_core_tick(core, now, sample);
+    if (!frame || length > MK2_FRAME_MAX || !length || memchr(frame, '\0', length) || memchr(frame, '\\', length))
+        return reject(core, MK2_BAD_FRAME);
+    if (!isfinite(now) || now < 0) return reject(core, MK2_CLOCK_ERROR);
+    size_t prefix = length > 7 && !memcmp(frame, "Switch ", 7) ? 7 :
+                    length > 6 && !memcmp(frame, "Joint ", 6) ? 6 : 0;
+    if (!prefix) return reject(core, MK2_BAD_FRAME);
+    struct json_object *object = strict_json(frame + prefix, length - prefix);
+    if (!object) return reject(core, MK2_BAD_FRAME);
+    struct json_object *value;
+    int result = -1;
+    if (prefix == 7) {
+        value = field(object, "Switch");
+        if (json_object_object_length(object) != 1 || !value || json_object_get_type(value) != json_type_boolean ||
+            !once(frame, length, "\"Switch\"")) result = reject(core, MK2_BAD_FRAME);
+        else if (!json_object_get_boolean(value)) {
+            /* Never power off; never stop a servo this plugin did not start. */
+            if (core->owns_servo || core->phase == MK2_WAIT_FIRST) mk2_core_stop(core, MK2_NO_FAULT);
+            result = 0;
+        } else if (core->phase != MK2_READY || !mk2_core_commands_available(core, sample)) {
+            /* A repeated enable is not a heartbeat or a fault-reset operation. */
+            core->rejected_frames++;
+        } else {
+            /* Switch only arms an intent. Do NOT open SDK servo before a fresh,
+             * bounded hold target has arrived and passed all first-frame checks. */
+            core->phase = MK2_WAIT_FIRST; core->last_receive = now; result = 0;
+        }
+    } else if (core->phase != MK2_WAIT_FIRST && core->phase != MK2_ACTIVE) {
+        result = reject(core, MK2_NOT_READY);
+    } else {
+        double data_time = NAN, target[MK2_AXES], dt = 0, velocity[MK2_AXES] = {0};
+        value = field(object, "Robot0");
+        bool valid = json_object_object_length(object) == 1 && value && json_object_get_type(value) == json_type_object &&
+            json_object_object_length(value) == 2 && once(frame, length, "\"Robot0\"") &&
+            once(frame, length, "\"time\"") && once(frame, length, "\"joint\"") &&
+            number(field(value, "time"), &data_time) && array7(field(value, "joint"), target);
+        enum mk2_fault fault = valid ? MK2_NO_FAULT : MK2_BAD_FRAME;
+        if (valid && (data_time <= 0 || !powered_healthy(sample))) fault = MK2_STATE_ERROR;
+        bool first = core->phase == MK2_WAIT_FIRST;
+        if (!fault && first && data_time > 0.2) fault = MK2_BAD_TIME;
+        if (!fault && !first) {
+            dt = data_time - core->last_data_time;
+            if (!isfinite(dt) || dt < core->policy.min_dt - 1e-9 || dt > core->policy.max_dt + 1e-9 ||
+                fabs((data_time - core->first_data_time) - (now - core->first_receive)) > core->policy.clock_skew)
+                fault = MK2_BAD_TIME;
+        }
+        for (int i = 0; !fault && i < MK2_AXES; i++) {
+            if (target[i] < core->policy.lower[i] || target[i] > core->policy.upper[i]) fault = MK2_LIMIT;
+            else if (fabs(target[i] - sample->joint[i]) > (first ? core->policy.first_hold_tolerance : core->policy.following_tolerance))
+                fault = first ? MK2_FIRST_TARGET : MK2_FOLLOWING;
+            else if (!first) {
+                velocity[i] = (target[i] - core->last_target[i]) / dt;
+                double acceleration = (velocity[i] - core->last_velocity[i]) / dt;
+                if (!isfinite(velocity[i]) || fabs(velocity[i]) > core->policy.velocity[i] + 1e-9) fault = MK2_VELOCITY;
+                else if (!isfinite(acceleration) || fabs(acceleration) > core->policy.acceleration[i] + 1e-9) fault = MK2_ACCELERATION;
+            }
+        }
+        if (fault) result = reject(core, fault);
+        else {
+            if (first) {
+                /* A failed SDK start can have partial side effects, so acquire
+                 * cleanup responsibility immediately before making that call. */
+                core->owns_servo = true;
+                core->sdk_error = core->io.start(core->io.context, core->policy.servo_q, core->policy.servo_r);
+            }
+            if (!core->sdk_error) core->sdk_error = core->io.joint(core->io.context, target, data_time);
+            if (core->sdk_error) mk2_core_stop(core, MK2_SDK_ERROR);
+            else {
+                if (first) { core->first_receive = now; core->first_data_time = data_time; }
+                core->last_receive = now; core->last_data_time = data_time;
+                memcpy(core->last_target, target, sizeof(target));
+                memcpy(core->last_velocity, velocity, sizeof(velocity));
+                core->accepted_joints++; core->phase = MK2_ACTIVE; result = 0;
+            }
+        }
+    }
+    json_object_put(object);
+    return result;
+}
+const char *mk2_phase_name(enum mk2_phase phase)
+{
+    static const char *names[] = {"locked", "ready", "waiting_first_joint", "active", "stopped", "fault"};
+    return phase >= MK2_LOCKED && phase <= MK2_FAULT ? names[phase] : "invalid";
+}
+const char *mk2_fault_name(enum mk2_fault fault)
+{
+    static const char *names[] = {"none", "bad_frame", "not_ready", "bad_time", "position_limit",
+        "first_target_not_hold", "following_error", "velocity_limit", "acceleration_limit", "watchdog",
+        "sdk_error", "state_error", "clock_error", "plugin_unload"};
+    return fault >= MK2_NO_FAULT && fault <= MK2_UNLOAD ? names[fault] : "invalid";
+}

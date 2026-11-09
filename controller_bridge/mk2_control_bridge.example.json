@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "allow_commands": false,
+  "command_host": "192.168.0.100",
+  "command_port": 8001,
+  "state_port": 8000,
+  "device_config_sha256": "a542dc92c51e2822e78dcfc385a90f925a909ebd70072fab0b5ab75d4e0c2bab",
+  "watchdog_seconds": 0.2,
+  "first_command_timeout": 2.0,
+  "min_dt": 0.005,
+  "max_dt": 0.05,
+  "clock_skew": 0.1,
+  "first_hold_tolerance": 0.002,
+  "following_tolerance": 0.05,
+  "servo_q": 1.0,
+  "servo_r": 0.0001,
+  "limits": {
+    "lower": [-5.14, -1.8231, -2.96, -1.4828, -2.96, -1.4778, -2.96],
+    "upper": [5.14, 1.7302, 2.96, 2.3798, 2.96, 1.4697, 2.96],
+    "velocity": [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
+    "acceleration": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+  }
+}
