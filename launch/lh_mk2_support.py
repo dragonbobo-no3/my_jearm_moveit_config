@@ -60,8 +60,10 @@ def build_hardware_description(urdf, srdf, hardware, robot_ip, state_port, comma
         planning['joint_limits'][axis['name']] = {
             'has_position_limits': True,
             'min_position': axis['smin'], 'max_position': axis['smax'],
-            'has_velocity_limits': True, 'max_velocity': min(0.3, axis['vmax']),
-            'has_acceleration_limits': True, 'max_acceleration': min(0.5, axis['amax']),
+            # Keep timed plans inside the driver's 0.24 / 0.4 envelope, leaving
+            # headroom for sampling jitter and bounded cancel/hold transitions.
+            'has_velocity_limits': True, 'max_velocity': min(0.18, axis['vmax']),
+            'has_acceleration_limits': True, 'max_acceleration': min(0.25, axis['amax']),
         }
 
     ET.SubElement(robot, 'link', name='sdk_flange')
@@ -78,13 +80,18 @@ def build_hardware_description(urdf, srdf, hardware, robot_ip, state_port, comma
     ET.SubElement(driver, 'plugin').text = 'je_software/JeZmqSystemHardware'
     for name, value in {'robot_ip': robot_ip, 'sub_port': state_port,
                         'pub_port': command_port,
-                        'command_dt': hardware['transport']['command_dt']}.items():
+                        'command_dt': hardware['transport']['command_dt'],
+                        'mk2_guarded_control': 'true',
+                        'mk2_feedback_timeout': '0.15'}.items():
         ET.SubElement(driver, 'param', name=name).text = str(value)
     for axis in axes:
         joint = ET.SubElement(control, 'joint', name=axis['name'])
         command = ET.SubElement(joint, 'command_interface', name='position')
         ET.SubElement(command, 'param', name='min').text = str(axis['smin'])
         ET.SubElement(command, 'param', name='max').text = str(axis['smax'])
+        # JTC supplies sampled velocity (including explicit zero on cancel).
+        # It is internal metadata, NOT an additional field on native Joint wire.
+        ET.SubElement(joint, 'command_interface', name='velocity')
         for interface in ('position', 'velocity', 'effort'):
             ET.SubElement(joint, 'state_interface', name=interface)
     return ET.tostring(robot, encoding='unicode'), ET.tostring(semantic, encoding='unicode'), planning

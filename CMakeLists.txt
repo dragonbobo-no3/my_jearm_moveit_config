@@ -8,6 +8,8 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(action_msgs REQUIRED)
 find_package(control_msgs REQUIRED)
+find_package(controller_manager REQUIRED)
+find_package(realtime_tools REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 
@@ -21,6 +23,16 @@ add_executable(cartesian_path_diagnoser
 
 add_executable(arm_state_logger
   src/arm_state_logger.cpp
+)
+
+add_executable(mk2_shared_clock_control_node
+  src/mk2_shared_clock_control_node.cpp
+)
+target_compile_features(mk2_shared_clock_control_node PRIVATE cxx_std_17)
+ament_target_dependencies(mk2_shared_clock_control_node
+  controller_manager
+  rclcpp
+  realtime_tools
 )
 
 ament_target_dependencies(fake_trajectory_executor
@@ -56,6 +68,7 @@ install(TARGETS
   arm_state_logger
   cartesian_path_diagnoser
   fake_trajectory_executor
+  mk2_shared_clock_control_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

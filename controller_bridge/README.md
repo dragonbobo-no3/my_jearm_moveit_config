@@ -1,9 +1,11 @@
 # MK2 controller-side state-only plugin
 
-Guarded control development is separate and **not deployed**. See
-[CONTROL_BRIDGE.md](CONTROL_BRIDGE.md) for the local-only implementation,
-offline validation, manual-enable requirement and future deployment gates.
-The state-only plugin described below is still the live commissioned plugin.
+Guarded control is separate and is now deployed **only in isolated SDK
+simulation**. See [SIMULATION_CONTROL.md](SIMULATION_CONTROL.md) for the actual
+deployment and bounded MoveIt/JTC/SDK acceptance, and
+[CONTROL_BRIDGE.md](CONTROL_BRIDGE.md) for protocol and remaining safety gates.
+The state-only plugin described below remains the physical-profile plugin;
+physical control is still blocked. Default PC feedback is unchanged.
 
 [mk2_state_publisher.c](mk2_state_publisher.c) is a standalone C plugin for the
 vendor RobotMain SDK, not a ROS executable and not built by the ROS package.

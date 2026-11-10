@@ -9,7 +9,8 @@ controller_manager:
 jearm_controller:
   ros__parameters:
     joints: [joint1, joint2, joint3, joint4, joint5, joint6, joint7]
-    command_interfaces: [position]
+    # Forward JTC's sampled velocity to the guarded driver; no PID adapter.
+    command_interfaces: [position, velocity]
     state_interfaces: [position, velocity]
     allow_partial_joints_goal: false
     open_loop_control: false

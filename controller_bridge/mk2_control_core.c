@@ -170,6 +170,32 @@ static int reject(struct mk2_core *core, enum mk2_fault reason)
 }
 void mk2_core_tick(struct mk2_core *core, double now, const struct mk2_sample *sample)
 {
+    if (core->phase == MK2_RELEASING) {
+        /* SDK StopRun is not StopRecover. Verify a fresh stationary interval
+         * before closing servo; no new Joint/Switch intent during release. */
+        if (!isfinite(now) || now < core->last_receive) {
+            mk2_core_stop(core, MK2_CLOCK_ERROR); return;
+        }
+        core->last_receive = now;
+        if (!sample_in_bounds(core, sample)) {
+            mk2_core_stop(core, MK2_STATE_ERROR); return;
+        }
+        if (now - core->release_start > core->policy.first_timeout) {
+            mk2_core_stop(core, MK2_WATCHDOG); return;
+        }
+        bool stable = sample->move_state == 0 && core->release_stable_since >= 0;
+        for (int i = 0; stable && i < MK2_AXES; i++)
+            if (fabs(sample->joint[i] - core->release_joint[i]) > 1e-5) stable = false;
+        if (!stable) {
+            memcpy(core->release_joint, sample->joint, sizeof(core->release_joint));
+            core->release_stable_since = sample->move_state == 0 ? now : -1;
+        } else if (now - core->release_stable_since >= 0.1) {
+            core->sdk_error = core->io.end(core->io.context);
+            if (core->sdk_error) mk2_core_stop(core, MK2_SDK_ERROR);
+            else { core->owns_servo = false; core->phase = MK2_READY; }
+        }
+        return;
+    }
     if (!core->owns_servo && core->phase != MK2_WAIT_FIRST) return;
     if (!isfinite(now) || now < core->last_receive) mk2_core_stop(core, MK2_CLOCK_ERROR);
     else if (!sample_in_bounds(core, sample) || (core->phase == MK2_WAIT_FIRST && sample->move_state != 0))
@@ -192,14 +218,36 @@ int mk2_core_handle(struct mk2_core *core, const char *frame, size_t length, dou
     if (!frame || length > MK2_FRAME_MAX || !length || memchr(frame, '\0', length) || memchr(frame, '\\', length))
         return reject(core, MK2_BAD_FRAME);
     if (!isfinite(now) || now < 0) return reject(core, MK2_CLOCK_ERROR);
-    size_t prefix = length > 7 && !memcmp(frame, "Switch ", 7) ? 7 :
+    size_t prefix = length > 8 && !memcmp(frame, "Release ", 8) ? 8 :
+                    length > 7 && !memcmp(frame, "Switch ", 7) ? 7 :
                     length > 6 && !memcmp(frame, "Joint ", 6) ? 6 : 0;
     if (!prefix) return reject(core, MK2_BAD_FRAME);
     struct json_object *object = strict_json(frame + prefix, length - prefix);
     if (!object) return reject(core, MK2_BAD_FRAME);
     struct json_object *value;
     int result = -1;
-    if (prefix == 7) {
+    if (prefix == 8) {
+        value = field(object, "Release");
+        if (json_object_object_length(object) != 1 || !value ||
+            json_object_get_type(value) != json_type_boolean || !json_object_get_boolean(value) ||
+            !once(frame, length, "\"Release\"")) result = reject(core, MK2_BAD_FRAME);
+        else if (!core->io.stop_run || core->fault != MK2_NO_FAULT || core->sdk_error ||
+                 (core->phase != MK2_ACTIVE && core->phase != MK2_WAIT_FIRST) ||
+                 !sample_in_bounds(core, sample)) core->rejected_frames++;
+        else if (!core->owns_servo) {
+            /* Cancel an unfulfilled intent, with no SDK mutation. */
+            core->phase = MK2_READY; result = 0;
+        } else {
+            core->sdk_error = core->io.stop_run(core->io.context);
+            if (core->sdk_error) mk2_core_stop(core, MK2_SDK_ERROR);
+            else {
+                core->phase = MK2_RELEASING;
+                core->release_start = core->last_receive = now;
+                core->release_stable_since = -1;
+                result = 0;
+            }
+        }
+    } else if (prefix == 7) {
         value = field(object, "Switch");
         if (json_object_object_length(object) != 1 || !value || json_object_get_type(value) != json_type_boolean ||
             !once(frame, length, "\"Switch\"")) result = reject(core, MK2_BAD_FRAME);
@@ -269,8 +317,8 @@ int mk2_core_handle(struct mk2_core *core, const char *frame, size_t length, dou
 }
 const char *mk2_phase_name(enum mk2_phase phase)
 {
-    static const char *names[] = {"locked", "ready", "waiting_first_joint", "active", "stopped", "fault"};
-    return phase >= MK2_LOCKED && phase <= MK2_FAULT ? names[phase] : "invalid";
+    static const char *names[] = {"locked", "ready", "waiting_first_joint", "active", "stopped", "fault", "releasing"};
+    return phase >= MK2_LOCKED && phase <= MK2_RELEASING ? names[phase] : "invalid";
 }
 const char *mk2_fault_name(enum mk2_fault fault)
 {

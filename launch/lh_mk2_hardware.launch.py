@@ -29,13 +29,9 @@ def _launch_setup(context):
             'the robot with Switch=true and sends position hold commands. '
             'Feedback mode never enables the arm.'
         )
-    if mode == 'control':
-        raise RuntimeError(
-            'Control is blocked pending revalidation of the SDK command/model '
-            'coordinate mapping after restoring the teach-pendant URDF axes '
-            '(J4/J6). confirm_enable does not bypass this check. '
-            'Use hardware_mode:=feedback; no command or enable will be sent.'
-        )
+    # Control remains blocked for physical/unknown backends. The pure SUB probe
+    # below must positively verify the simulation-only plugin's isolation and
+    # ready state before any write-capable controller_manager is created.
     state_port, command_port = int(value('state_port')), int(value('command_port'))
     timeout = float(value('state_timeout'))
     startup_timeout = float(value('startup_timeout'))
@@ -152,6 +148,11 @@ def _launch_setup(context):
 
         return [stop_on_exit(bridge, 'MK2 feedback lost or receiver stopped'),
                 RegisterEventHandler(OnProcessIO(target_action=bridge, on_stdout=after_feedback)),
+            LogInfo(msg='FEEDBACK / PLAN ONLY: trajectory execution is disabled. '
+                'RViz Plan & Execute may report planning success without motion; '
+                'no trajectory commands are sent. Isolated SDK simulation control '
+                'requires an explicit relaunch with hardware_mode:=control '
+                'confirm_enable:=true and a successful simulation preflight.'),
                 LogInfo(msg='Waiting for controller State feedback before starting MoveIt/RViz; no fake fallback.'),
                 bridge]
 
@@ -160,11 +161,13 @@ def _launch_setup(context):
     probe = Node(
         package='my_jearm_moveit_config', executable='mk2_state_bridge.py',
         arguments=bridge_args + ['--probe-only', '--require-command-bridge',
+                     '--require-simulation-control',
                                  '--limits-file', str(config / 'hardware_mk2.yaml')],
         output='screen',
     )
     control = Node(
-        package='controller_manager', executable='ros2_control_node', output='screen',
+        package='my_jearm_moveit_config', executable='mk2_shared_clock_control_node',
+        output='screen',
         parameters=[{'robot_description': urdf}, str(config / 'ros2_controllers_mk2.yaml')],
         additional_env={'JE_ARM_CONTROLLED_ARM': 'left'},
     )
@@ -191,15 +194,17 @@ def _launch_setup(context):
 
     return [
         RegisterEventHandler(OnProcessExit(target_action=probe,
-            on_exit=after_success([control], 'Read-only hardware preflight'))),
+            on_exit=after_success([*common, control], 'Read-only hardware preflight'))),
         RegisterEventHandler(OnProcessStart(target_action=control, on_start=[broadcaster])),
         RegisterEventHandler(OnProcessExit(target_action=broadcaster,
             on_exit=after_success([trajectory], 'Joint state broadcaster startup'))),
         RegisterEventHandler(OnProcessExit(target_action=trajectory,
             on_exit=after_success(visualization, 'Trajectory controller startup'))),
         stop_on_exit(control, 'MK2 controller manager stopped'),
-        LogInfo(msg='CONTROL OPT-IN: driver activation sends Switch=true; no automatic trajectory is submitted.'),
-        *common, probe,
+        LogInfo(msg='SDK SIMULATION CONTROL ONLY: verified isolated simulator required; '
+                'Switch=true requests validated servo hold, never physical enable. '
+                'No automatic trajectory is submitted.'),
+        probe,
     ]
 
 

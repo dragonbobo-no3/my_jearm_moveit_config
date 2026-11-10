@@ -6,7 +6,7 @@
 
 #define MK2_AXES 7
 #define MK2_FRAME_MAX 4096
-enum mk2_phase { MK2_LOCKED, MK2_READY, MK2_WAIT_FIRST, MK2_ACTIVE, MK2_STOPPED, MK2_FAULT };
+enum mk2_phase { MK2_LOCKED, MK2_READY, MK2_WAIT_FIRST, MK2_ACTIVE, MK2_STOPPED, MK2_FAULT, MK2_RELEASING };
 enum mk2_fault {
     MK2_NO_FAULT, MK2_BAD_FRAME, MK2_NOT_READY, MK2_BAD_TIME, MK2_LIMIT,
     MK2_FIRST_TARGET, MK2_FOLLOWING, MK2_VELOCITY, MK2_ACCELERATION,
@@ -33,6 +33,8 @@ struct mk2_io {
     int (*joint)(void *, const double *, double data_time);
     int (*stop)(void *);
     int (*end)(void *);
+    /* Optional SIMULATION-ONLY clean release. Never a fault reset. */
+    int (*stop_run)(void *);
 };
 struct mk2_core {
     struct mk2_policy policy;
@@ -44,6 +46,7 @@ struct mk2_core {
     uint64_t accepted_joints, rejected_frames;
     double last_receive, first_receive, first_data_time, last_data_time;
     double last_target[MK2_AXES], last_velocity[MK2_AXES];
+    double release_start, release_stable_since, release_joint[MK2_AXES];
 };
 int mk2_policy_parse(const char *, size_t, struct mk2_policy *, char *error, size_t);
 int mk2_core_init(struct mk2_core *, const struct mk2_policy *, const struct mk2_io *);

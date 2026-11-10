@@ -1,10 +1,24 @@
-# MK2 guarded control bridge — offline development, 2026-11-09
+# MK2 guarded control bridge — 2026-11-09
+
+## Current status: isolated SDK simulation only
+
+The simulation-only build has now been deployed and exercised through the
+installed MoveIt → JTC → ZMQ → native SDK route. Seven-axis small roundtrip
+tracking and a latched command-loss watchdog passed. Physical control remains
+blocked; the physical profile still uses its state-only plugin. Exact current
+deployment, evidence and final watchdog-latched state are recorded in
+[SIMULATION_CONTROL.md](SIMULATION_CONTROL.md). No ROS package rebuild was done.
+
+The sections below retain the original offline-development evidence. Statements
+about no deployment/restart refer to that earlier phase, not today's simulation
+commissioning. Removed test fixtures have not been reintroduced.
 
 **Later direction correction:** the user confirmed the original teach-pendant
 URDF matches the physical arm. ROS now preserves its original axes/origins,
 including negative-Z J4/J6, rather than forcing an all-positive-Z MDH chain.
-The ROS control entrypoint is blocked even with `confirm_enable=true` until SDK
-command/model/physical coordinate mapping is revalidated. Earlier MDH agreement
+The ROS control entrypoint still blocks physical/unknown backends, even with
+`confirm_enable=true`; only an explicitly verified isolated simulator is allowed.
+SDK command/model/physical coordinate mapping still requires physical validation. Earlier MDH agreement
 and the offline tests below are not evidence that physical directions are right.
 No encoder calibration, SDK angle sign or controller file was changed for this fix.
 
@@ -13,8 +27,8 @@ fixtures were removed after acceptance. Test results below are historical,
 not an executable test suite currently shipped in this repository. Production
 sources, locked commissioning policy and runtime safety checks remain unchanged.
 
-**Not deployed. Not a physical-control acceptance result.** The live controller
-continues to use the previously commissioned state-only plugin. This work did
+**Historical offline phase — not physical-control acceptance.** At that time the
+live controller used the previously commissioned state-only plugin. That phase did
 not modify controller files, restart RobotMain, enable/disable any drive or send
 any real hold/trajectory command. SSH operations only read SDK declarations and
 exported symbols; SDK headers were copied to a local temporary directory.
@@ -28,8 +42,8 @@ exported symbols; SDK headers were copied to a local temporary directory.
 - [mk2_control_plugin.c](mk2_control_plugin.c): standalone vendor C plugin. It is
   not a ROS executable and is intentionally not installed by the ROS package.
 - [mk2_control_bridge.example.json](mk2_control_bridge.example.json): locked
-  commissioning policy, `allow_commands: false`. The live profile does not have
-  this newly developed policy/plugin installed.
+  commissioning policy, `allow_commands: false`. It remains locked in source;
+  only the isolated simulation profile has its own reviewed enabled policy.
 - Historical offline validation covered 57 core cases and fake-SDK plugin
   lifecycle/loopback transport. It loaded **no real libRobotControl**, used
   temporary mock DeviceConfig/policy files and random **127.0.0.1** ports only.
@@ -55,6 +69,10 @@ from unverified legacy comments:
 - `RobotStop(0)` requests stopping current motion **without powering off**, and
   blocks subsequent motion until the controller's forced-stop state is recovered.
   This is a vendor software stop, **not a certified hardware emergency stop**.
+- `RobotStopRun(0)` is separately documented by the actual SDK header to stop
+  without powering off or blocking later motion. The source-only simulation
+  clean-release extension uses this only for an explicitly healthy session,
+  checks idle/stable feedback before ServoEnd, and never resets an existing fault.
 - `ServoEnd(0)` closes the SDK servo function. It returns int, 0 success; its
   actual braking/holding behavior must be verified, not assumed from the name.
 - `get_robot_move_state(0)`: 0 normal, negative abnormal, 7 forced stop, other
@@ -72,7 +90,13 @@ and end, publishes the SDK error and remains latched; it does not clear faults.
 
 ## Command subset and state machine
 
-Only **single-frame** `Switch ` and `Joint ` commands are accepted. Exact,
+The deployed baseline accepts **single-frame** `Switch ` and `Joint ` commands.
+The newer source-only isolation-verified simulation extension additionally accepts
+`Release {"Release":true}` when it advertises `clean_release_supported=true`.
+It uses RobotStopRun, verifies idle/stability, ends servo and returns to ready;
+its timeout/errors retain forced-stop behavior. It never resets stopped/fault,
+and the physical build does not provide this capability. See
+[deployment status and tests](SIMULATION_CONTROL.md). Exact baseline,
 case-sensitive JSON shapes:
 
 - `Switch {"Switch":true}`: arm a waiting-for-first-hold intent only. It does
@@ -139,7 +163,7 @@ state sequence. `commands_enabled` is false when locked/not healthy/not manually
 enabled/stopped/faulted. The existing ROS `--require-command-bridge` preflight
 therefore remains conservative. Its true value is **not a safety certificate**.
 
-## Validation actually performed
+## Historical offline validation
 
 - 57 core cases passed with ordinary `-std=c11 -Wall -Wextra -Werror` compilation.
 - Same 57 cases passed under AddressSanitizer and UndefinedBehaviorSanitizer.
@@ -163,9 +187,9 @@ therefore remains conservative. Its true value is **not a safety certificate**.
   historical observation that the arm was enabled at that time, not permission
   to restart or a substitute for fresh onsite per-axis checks.
 
-The offline runner can be invoked with the system Python after local dependencies
-are available. It performs no SSH or physical-controller access. Its build steps
-are for standalone C fixtures, not for the ROS/CMake package.
+The historical offline runner and fixtures have been removed at user request.
+Current acceptance used temporary inline checks, not new repository test files.
+Standalone controller builds remain separate from the ROS/CMake package.
 
 ## Known boundaries — required before acceptance
 
@@ -187,27 +211,29 @@ are for standalone C fixtures, not for the ROS/CMake package.
    crash or controller failure can prevent it from executing. Fake timing does
    **not** certify physical stop latency; vendor/hardware protections and an
    accessible emergency stop remain mandatory.
-5. No proof yet of filter response, SDK first-target atomicity, braking/holding,
+5. No physical proof yet of filter response, SDK first-target atomicity, braking/holding,
    whole-workspace trajectories, latency/jitter, numerical/noise tolerance or
-   actual JTC execution. Do not relax protection caps blindly if commissioning
+  physical JTC execution. Small isolated-simulation JTC execution has passed;
+  it does not resolve these physical requirements. Do not relax caps if commissioning
    trips them. Do not issue pendant teach/motion concurrently with ROS ownership.
 6. Legacy driver still subscribes to gripper ROS commands. Any such command is
    unsupported and rejected/faulted by this bridge; do not use the old end-effector
    topics while commissioning the arm-only path.
 
-## Future build/deployment gate
+## Future physical build/deployment gate
 
-This turn intentionally stops at local development. Before modifying the active
-controller: obtain fresh confirmation of reliable support, all seven axes
+Simulation acceptance does not authorize physical deployment. Before modifying
+the physical controller profile: obtain fresh confirmation of reliable support, all seven axes
 disabled and permission for a backed-up controlled restart. Verify exact process,
 SDK/ENI/DeviceConfig identities using the existing startup guards; no force kill,
 calibration, automatic fault recovery or bypass.
 
 Controller build prerequisites: cc, real vendor SDK headers/library, libzmq,
 json-c and OpenSSL development files. **The controller currently lacks json-c
-development headers/pkg-config metadata**; adding that dependency requires a
-separately authorized system-package operation. Its runtime libjson-c.so.5,
-OpenSSL and ZMQ headers were observed; no package was installed this turn.
+development headers/pkg-config metadata**. The simulation build used a staged
+copy of matching-version development headers and linked the exact installed
+runtime library; no system package was installed. Any system-package operation
+for future builds still requires authorization.
 
 Build a uniquely named real .so from core + plugin, linking libRobotControl,
 json-c, zmq, crypto, pthread and libm, with undefined-symbol checks. Back up

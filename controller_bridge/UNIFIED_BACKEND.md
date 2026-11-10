@@ -1,12 +1,20 @@
 # Unified physical / SDK simulation feedback — 2026-11-09
 
+**Current follow-up:** isolated SDK simulation now uses the guarded control
+plugin and has passed a small seven-axis MoveIt/JTC/SDK roundtrip and latched
+watchdog test. Physical feedback remains state-only and physical control is
+blocked. See [SIMULATION_CONTROL.md](SIMULATION_CONTROL.md) for the superseding
+simulation deployment/hash/backup and final state. The state-only simulation
+deployment and acceptance recorded below are historical, not the current plugin.
+
 **Subsequent model-direction correction:** the user verified the teach-pendant
 model against the physical arm. The ROS runtime now preserves the original URDF
 joint axes and origins (notably negative-Z J4/J6); SDK joint feedback is unchanged.
 The MDH-generated geometry and FK results recorded below describe the earlier
 acceptance, not proof of correct physical directions. Installed runtime model
 preservation was rechecked in domain 223 with 1180 SDK samples and 35 passing
-tests. Control is blocked pending coordinate revalidation even with confirmation.
+tests. Physical control remains blocked pending coordinate revalidation even
+with confirmation; a strict isolated-simulation control gate now permits simulation.
 This local fix did not modify/restart the controller or send any motion command.
 
 **Subsequent cleanup:** the user requested removal of local development test
@@ -58,7 +66,7 @@ simulation sessions remain mutually exclusive; changing a running backend is
 not automatic. Existing sessions must be stopped using their owned supervisor
 and relevant safety procedure, not broad `pkill` or forced kill.
 
-## Deployment and backups
+## Historical state-only deployment and backups
 
 Controller staging/deployment directory:
 `/home/robot/Work/system/robot_config_new_left_sim/bridge_unified_20261109_NFVbjv`.
@@ -132,8 +140,9 @@ from group signaling; the corrected acceptance sent SIGINT only to launch.
 ## Boundaries / rollback
 
 The real feedback plugin remains the previously commissioned state-only plugin.
-The guarded control plugin remains local/offline, undeployed and locked. Neither
-physical nor SDK-simulation trajectory execution was accepted here. `PowerState`
+The guarded control plugin was local/offline during this feedback-only acceptance;
+the later isolated-simulation deployment is documented separately above. No
+physical trajectory execution has been accepted. `PowerState`
 from simulation is not evidence of physical drive safety.
 
 Rollback must first verify and normally stop only the owned simulation session;

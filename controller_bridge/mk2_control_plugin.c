@@ -12,15 +12,48 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <zmq.h>
 
 #ifndef PROFILE_ROOT
 #define PROFILE_ROOT "/home/robot/Work/system/robot_config_new_left"
 #endif
+#ifndef MK2_SIMULATION_ONLY
+#define MK2_SIMULATION_ONLY 0
+#endif
 static atomic_bool stopping = ATOMIC_VAR_INIT(false);
 static bool started;
 static pthread_t worker;
 static struct mk2_policy policy;
+
+static bool simulation_isolated(void)
+{
+#if MK2_SIMULATION_ONLY
+    char own[128], host[128], line[1024];
+    ssize_t a = readlink("/proc/self/ns/mnt", own, sizeof(own));
+    ssize_t b = readlink("/proc/1/ns/mnt", host, sizeof(host));
+    struct stat blocked, null_device;
+    if (a <= 0 || b <= 0 || (a == b && !memcmp(own, host, (size_t)a)) ||
+        stat("/dev/EtherCAT0", &blocked) || stat("/dev/null", &null_device) ||
+        !S_ISCHR(blocked.st_mode) || blocked.st_rdev != null_device.st_rdev)
+        return false;
+    FILE *file = fopen(PROFILE_ROOT "/GlobalConfig.yaml", "r");
+    if (!file) return false;
+    int enabled = 0;
+    while (fgets(line, sizeof(line), file)) {
+        if (!strncmp(line, "simulation:", 11)) {
+            if (strcmp(line, "simulation: true\n")) { fclose(file); return false; }
+            enabled++;
+        }
+    }
+    bool ok = !ferror(file) && enabled == 1;
+    fclose(file);
+    return ok;
+#else
+    return true;
+#endif
+}
 
 static double monotonic_time(void)
 {
@@ -94,6 +127,9 @@ static int sdk_joint(void *unused, const double *target, double data_time)
 }
 static int sdk_stop(void *unused) { (void)unused; return RobotStop(0); }
 static int sdk_end(void *unused) { (void)unused; return ServoEnd(0); }
+#if MK2_SIMULATION_ONLY
+static int sdk_stop_run(void *unused) { (void)unused; return RobotStopRun(0); }
+#endif
 static struct mk2_sample read_sample(void)
 {
     struct mk2_sample sample = {.valid = false, .power = -1, .driver_error = -1,
@@ -121,7 +157,14 @@ static void publish_state(void *publisher, const struct mk2_core *core, const st
     struct json_object *root = json_object_new_object(), *metadata = json_object_new_object(), *robot = json_object_new_object();
     json_object_object_add(root, "Bridge", metadata); json_object_object_add(root, "Robot0", robot);
     json_object_object_add(metadata, "mode", json_object_new_string("control_guarded"));
+    json_object_object_add(metadata, "backend", json_object_new_string(
+        MK2_SIMULATION_ONLY ? "sdk_simulation" : "physical"));
+    json_object_object_add(metadata, "simulation_only", json_object_new_boolean(MK2_SIMULATION_ONLY));
+    json_object_object_add(metadata, "simulation_isolated", json_object_new_boolean(
+        MK2_SIMULATION_ONLY && simulation_isolated()));
     json_object_object_add(metadata, "commands_enabled", json_object_new_boolean(mk2_core_commands_available(core, sample)));
+    json_object_object_add(metadata, "clean_release_supported", json_object_new_boolean(
+        MK2_SIMULATION_ONLY && core->io.stop_run != NULL));
     json_object_object_add(metadata, "operator_enable_required", json_object_new_boolean(true));
     json_object_object_add(metadata, "automatic_power_changes", json_object_new_boolean(false));
     json_object_object_add(metadata, "control_state", json_object_new_string(mk2_phase_name(core->phase)));
@@ -149,6 +192,9 @@ static void *run_bridge(void *unused)
 {
     (void)unused;
     struct mk2_io io = {.start = sdk_start, .joint = sdk_joint, .stop = sdk_stop, .end = sdk_end};
+#if MK2_SIMULATION_ONLY
+    io.stop_run = sdk_stop_run;
+#endif
     struct mk2_core core;
     if (mk2_core_init(&core, &policy, &io)) return NULL;
     void *context = zmq_ctx_new();
@@ -181,6 +227,11 @@ static void *run_bridge(void *unused)
     double next_publish = monotonic_time();
     enum mk2_phase previous = core.phase;
     while (!atomic_load(&stopping)) {
+        if (!simulation_isolated()) {
+            fprintf(stderr, "[MK2Control] Simulation isolation lost; stopping owned servo\n");
+            mk2_core_stop(&core, MK2_STATE_ERROR);
+            break;
+        }
         struct mk2_sample sample = read_sample();
         double now = monotonic_time();
         mk2_core_tick(&core, now, &sample);
@@ -225,7 +276,7 @@ static void *run_bridge(void *unused)
 }
 void PluginMain(void)
 {
-    if (started || !correct_profile() || !load_policy()) {
+    if (started || !correct_profile() || !simulation_isolated() || !load_policy()) {
         fprintf(stderr, "[MK2Control] Refusing duplicate/wrong-profile/unverified configuration\n");
         return;
     }

@@ -48,6 +48,38 @@ def command_bridge_available(frames):
             and metadata.get('mode') != 'feedback_only')
 
 
+def simulation_control_available(frames):
+    """Only a guarded, explicitly isolated SDK simulator may pass control preflight."""
+    message = b' '.join(frames)
+    if not message.startswith(b'State '):
+        return False
+    state = json.loads(message[6:])
+    metadata = state.get('Bridge') if isinstance(state, dict) else None
+    return (command_bridge_available(frames) and isinstance(metadata, dict)
+            and metadata.get('mode') == 'control_guarded'
+            and metadata.get('backend') == 'sdk_simulation'
+            and metadata.get('simulation_only') is True
+            and metadata.get('simulation_isolated') is True
+            and metadata.get('control_state') == 'ready'
+            and metadata.get('fault') == 'none')
+
+
+def control_status_description(frames, robot_key='Robot0'):
+    """Report observed capability/state, without implying a fault can be reset."""
+    state = json.loads(b' '.join(frames)[6:])
+    metadata = state.get('Bridge')
+    if not isinstance(metadata, dict):
+        metadata = {}
+    robot = state[robot_key]
+    fields = ('mode', 'backend', 'commands_enabled', 'simulation_only',
+              'simulation_isolated', 'control_state', 'fault', 'sdk_error')
+    return json.dumps({
+        'Bridge': {field: metadata.get(field, 'missing') for field in fields},
+        robot_key: {field: robot.get(field, 'missing')
+                    for field in ('PowerState', 'MoveState')},
+    }, separators=(',', ':'))
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--robot-ip', default='192.168.0.99')
@@ -60,6 +92,8 @@ def main(argv=None):
     parser.add_argument('--probe-only', action='store_true')
     parser.add_argument('--require-command-bridge', action='store_true',
                         help='Refuse driver activation unless State explicitly advertises command support')
+    parser.add_argument('--require-simulation-control', action='store_true',
+                        help='Refuse activation unless an isolated, ready SDK simulation control bridge is verified')
     args, ros_args = parser.parse_known_args(argv)
     if not 1 <= args.state_port <= 65535 or not math.isfinite(args.timeout) or args.timeout <= 0:
         parser.error('Port must be 1..65535 and timeout must be finite and positive')
@@ -119,9 +153,22 @@ def main(argv=None):
                 print('Feedback is outside the configured SDK joint bounds; refusing activation.', flush=True)
                 return 3
             if args.require_command_bridge and not command_bridge_available(frames):
-                print('Controller bridge does not explicitly advertise command support; '
-                      'refusing write-driver activation. Feedback-only mode remains available.', flush=True)
+                print('Control preflight refused: command capability is currently unavailable '
+                    '(missing/locked bridge, disabled axes or stopped/faulted state). '
+                    'Feedback-only mode remains available.', flush=True)
+                print('Observed controller status: ' + control_status_description(frames, args.robot_key),
+                    flush=True)
+                print('Do not start a second control stack. A stopped/faulted bridge requires '
+                    'operator inspection and supported recovery/restart; PC relaunch or '
+                    'axis enable alone does not reset a latched bridge fault.', flush=True)
                 return 4
+            if args.require_simulation_control and not simulation_control_available(frames):
+                print('Control requires a ready guarded SDK simulation with verified isolation; '
+                    'physical/unknown/stopped/faulted or already-owned backends are refused.', flush=True)
+                print('Observed controller status: ' + control_status_description(frames, args.robot_key),
+                    flush=True)
+                print('Do not start a second control stack or attempt automatic fault recovery.', flush=True)
+                return 5
             if not connected:
                 print(f'Valid {args.robot_key} feedback (SDK radians): {positions}', flush=True)
                 connected = True

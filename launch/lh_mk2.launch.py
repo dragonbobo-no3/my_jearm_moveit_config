@@ -35,8 +35,8 @@ def _launch_setup(context):
             'LH_MK2 SDK FEEDBACK: same Robot0 State protocol for physical or SDK simulation; no enable or motion. '
             'For offline CAD simulation, set use_fake_executor:=true.'
             if mode == 'feedback' else
-            'LH_MK2 EXPLICIT CONTROL: command-capability preflight and confirm_enable '
-            'are required; driver activation can enable the arm.'
+            'LH_MK2 SDK SIMULATION CONTROL ONLY: isolated simulation control-capability '
+            'preflight and confirm_enable are required; physical control is blocked.'
         )
         return [LogInfo(msg=message), IncludeLaunchDescription(
             PythonLaunchDescriptionSource(str(share / 'launch/lh_mk2_hardware.launch.py')),
@@ -124,8 +124,8 @@ def generate_launch_description():
             'use_fake_executor', default_value='false', choices=['true', 'false'],
             description='false (default): real SDK feedback; true: explicit offline CAD simulation.',
         ),
-        DeclareLaunchArgument('hardware_mode', default_value='feedback', choices=['feedback', 'control']),
-        DeclareLaunchArgument('confirm_enable', default_value='false', choices=['true', 'false']),
+        DeclareLaunchArgument('hardware_mode', default_value='control', choices=['feedback', 'control']),
+        DeclareLaunchArgument('confirm_enable', default_value='true', choices=['true', 'false']),
         DeclareLaunchArgument('robot_ip', default_value='192.168.0.99'),
         DeclareLaunchArgument('state_port', default_value='8000'),
         DeclareLaunchArgument('command_port', default_value='8001'),
