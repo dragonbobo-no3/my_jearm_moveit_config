@@ -252,7 +252,7 @@ def generate_launch_description():
         output="screen",
         parameters=[{
             'base_link': 'base_link',
-            'ee_link': 'Link17',
+            'ee_link': 'Left_Link7',
             'log_period_sec': 5.0,
             'joint_names': [
                 'joint11', 'joint12', 'joint13', 'joint14', 'joint15', 'joint16', 'joint17',

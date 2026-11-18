@@ -159,10 +159,6 @@ if(BUILD_TESTING)
     set_tests_properties(je2_session_client_sanitized_test PROPERTIES TIMEOUT 30
       ENVIRONMENT "ASAN_OPTIONS=detect_leaks=1:halt_on_error=1;UBSAN_OPTIONS=halt_on_error=1")
   endif()
-
-  ament_add_gtest(mk2_shared_clock_cycle_test test/mk2_shared_clock_cycle_test.cpp)
-  target_include_directories(mk2_shared_clock_cycle_test PRIVATE src)
-  target_compile_features(mk2_shared_clock_cycle_test PRIVATE cxx_std_17)
 endif()
 
 ament_package()

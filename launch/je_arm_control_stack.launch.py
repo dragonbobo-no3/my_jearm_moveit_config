@@ -145,7 +145,7 @@ def generate_launch_description():
         package='my_jearm_moveit_config',
         executable='fake_trajectory_executor',
         parameters=[{
-            'ee_link': 'Link17',
+            'ee_link': 'Left_Link7',
             'controlled_arm': controlled_arm,
             'joint_names': [
                 'joint11', 'joint12', 'joint13', 'joint14', 'joint15', 'joint16', 'joint17',
@@ -257,7 +257,7 @@ def generate_launch_description():
         additional_env=runtime_env,
         parameters=[{
             'base_link': 'base_link',
-            'ee_link': 'Link17',
+            'ee_link': 'Left_Link7',
             'log_period_sec': 5.0,
             'joint_names': [
                 'joint11', 'joint12', 'joint13', 'joint14', 'joint15', 'joint16', 'joint17',

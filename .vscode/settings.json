@@ -1,0 +1,16 @@
+{
+  "cmake.generator": "Unix Makefiles",
+  "cmake.cmakeCommunicationMode": "legacy",
+  "cmake.buildDirectory": "${workspaceFolder}/../../build/my_jearm_moveit_config_vscode",
+  "cmake.buildBeforeRun": false,
+  "cmake.configureSettings": {
+    "BUILD_TESTING": true,
+    "Python3_EXECUTABLE": "/usr/bin/python3",
+    "PYTHON_EXECUTABLE": "/usr/bin/python3"
+  },
+  "cmake.environment": {
+    "CMAKE_PREFIX_PATH": "/opt/ros/humble:${workspaceFolder}/../../install/common:${workspaceFolder}/../../install/je_software",
+    "AMENT_PREFIX_PATH": "${workspaceFolder}/../../install/je_software:${workspaceFolder}/../../install/common:/opt/ros/humble",
+    "PYTHONPATH": "/opt/ros/humble/local/lib/python3.10/dist-packages:/opt/ros/humble/lib/python3.10/site-packages:${env:PYTHONPATH}"
+  }
+}

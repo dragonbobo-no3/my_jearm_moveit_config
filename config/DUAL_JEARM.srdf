@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="DOUB_JEARM">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="je_arm_v2_261112">
 
   <group name="left_arm">
     <joint name="joint11"/>
@@ -27,29 +27,31 @@
   </group>
 
   <group name="left_arm_ee">
-    <link name="Link17"/>
+    <link name="Left_Link7"/>
   </group>
 
   <group name="right_arm_ee">
-    <link name="Link27"/>
+    <link name="Right_Link7"/>
   </group>
 
-  <disable_collisions link1="base_link" link2="Link12" reason="Never"/>
-  <disable_collisions link1="Link11" link2="Link12" reason="Adjacent"/>
-  <disable_collisions link1="Link12" link2="Link13" reason="Adjacent"/>
-  <disable_collisions link1="Link13" link2="Link14" reason="Adjacent"/>
-  <disable_collisions link1="Link14" link2="Link15" reason="Adjacent"/>
-  <disable_collisions link1="Link15" link2="Link16" reason="Adjacent"/>
-  <disable_collisions link1="Link16" link2="Link17" reason="Adjacent"/>
+  <disable_collisions link1="base_link" link2="Link1" reason="Adjacent"/>
 
-  <disable_collisions link1="base_link" link2="Link22" reason="Never"/>
-  <disable_collisions link1="Link21" link2="Link22" reason="Adjacent"/>
-  <disable_collisions link1="Link22" link2="Link23" reason="Adjacent"/>
-  <disable_collisions link1="Link23" link2="Link24" reason="Adjacent"/>
-  <disable_collisions link1="Link24" link2="Link25" reason="Adjacent"/>
-  <disable_collisions link1="Link25" link2="Link26" reason="Adjacent"/>
-  <disable_collisions link1="Link26" link2="Link27" reason="Adjacent"/>
+  <disable_collisions link1="Link1" link2="Left_Link1" reason="Adjacent"/>
+  <disable_collisions link1="Left_Link1" link2="Left_Link2" reason="Adjacent"/>
+  <disable_collisions link1="Left_Link2" link2="Left_Link3" reason="Adjacent"/>
+  <disable_collisions link1="Left_Link3" link2="Left_Link4" reason="Adjacent"/>
+  <disable_collisions link1="Left_Link4" link2="Left_Link5" reason="Adjacent"/>
+  <disable_collisions link1="Left_Link5" link2="Left_Link6" reason="Adjacent"/>
+  <disable_collisions link1="Left_Link6" link2="Left_Link7" reason="Adjacent"/>
 
-  <disable_collisions link1="Link17" link2="Link27" reason="Never"/>
+  <disable_collisions link1="Link1" link2="Right_Link1" reason="Adjacent"/>
+  <disable_collisions link1="Right_Link1" link2="Right_Link2" reason="Adjacent"/>
+  <disable_collisions link1="Right_Link2" link2="Right_Link3" reason="Adjacent"/>
+  <disable_collisions link1="Right_Link3" link2="Right_Link4" reason="Adjacent"/>
+  <disable_collisions link1="Right_Link4" link2="Right_Link5" reason="Adjacent"/>
+  <disable_collisions link1="Right_Link5" link2="Right_Link6" reason="Adjacent"/>
+  <disable_collisions link1="Right_Link6" link2="Right_Link7" reason="Adjacent"/>
+
+  <disable_collisions link1="Left_Link7" link2="Right_Link7" reason="Never"/>
 
 </robot>

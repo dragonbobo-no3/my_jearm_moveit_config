@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# JEServer_v2 development entry. This revision is deliberately NOT a controller
+# supervisor: a simulation adapter exists, but startup integration is unfinished.
+# No sudo, kill, network rules or controller-profile writes here. Explicit
+# SDK-test modes delegate ONLY to bounded private probes; the separate writer
+# experiment explicitly exercises virtual holding Servo without loading plugins.
+set -Eeuo pipefail
+readonly HERE=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+readonly PROFILE=/home/robot/Work/system/robot_config_new_left
+readonly ORIGINAL=/home/robot/Work/system/RobotMain_v2
+usage() {
+    printf '%s\n' \
+        'RobotMain_v2_pro — JEServer_v2 development entry (NOT commissioned)' \
+        'Usage: bash RobotMain_v2_pro --help|--test|--test-plugin|--test-plugin-sandbox|--build-sim-plugin|--check|--auto|--real|--sim' \
+        '--test: run SDK-free JEServer_v2 + guarded-core offline tests as a normal user.' \
+        '--test-plugin: actual shared-library fake-SDK loader/runtime tests; requires JE2_SDK_INCLUDE.' \
+        '--test-plugin-sandbox: full PluginMain worker lifecycle in real private namespaces; fake SDK only.' \
+        '--test-handover-sandbox: explicit observer build; real kernel writer tasks, fake SDK, eight handover/failure cases.' \
+        '--test-session-sandbox: explicit session/boot/generation transport; full private worker with fake SDK, NOT ROS rearm certification.' \
+        '--build-sim-plugin: compile new simulation .so only; requires JE2_SDK_INCLUDE; no startup.' \
+        '--check-plugin-sdk: controller-only private probe preflight; NO SDK loaded.' \
+        '--test-plugin-sdk: REAL SDK private simulation lifecycle; allow_commands=false; RT ceiling >=38 required.' \
+        '--test-writer-exit-virtual: REAL SDK isolated virtual enable + holding Servo + kernel instance-exit experiment; NO plugin/jog.' \
+        '--check-handover-sdk: dedicated virtual handover preflight; NO SDK loaded.' \
+        '--test-handover-virtual: REAL SDK + experimental PluginMain + virtual holding Servo/jog; private prototype buttons ONLY.' \
+        '--check-teach-sdk: dedicated native teach semantics preflight; NO SDK loaded.' \
+        '--test-teach-virtual: REAL SDK private virtual enable + two native jog/STOP cycles; SDK-internal recovery observed, NOT handover certification.' \
+        '--test-teach-external-stop-virtual: private native jog + injected RobotStop; NO subsequent jog/recovery.' \
+        '--test-teach-overlap-stop-virtual: private native jog + teach STOP then injected RobotStop; NO subsequent jog/recovery.' \
+        '--test-writer-exit-offline: real Linux task tests + sanitizers; no SDK/network.' \
+        '--test-plugin-sdk-offline: SDK-free policy/guard/sanitizer regression; requires JE2_SDK_INCLUDE.' \
+        '--check (default): read-only readiness report; 78 means adapter not ready.' \
+        '--auto/--real/--sim/--start: refused until production routing, writer exit and protected startup are commissioned.' \
+        'No fallback to old JEServer/MK2 plugins. Existing RobotMain_v2 is untouched.' \
+        'No physical-controller enable, motion, stop, restart, network-rule or installed-configuration operation is issued.'
+}
+report() {
+    printf '%s\n' 'ENTRY=RobotMain_v2_pro' 'ENGINE=JEServer_v2' 'STATUS=NOT_READY'
+    local missing=0 file
+    for file in jeserver_v2.c jeserver_v2.h jeserver_v2_plugin.c jeserver_v2_runtime.inc \
+        jeserver_v2_transport.c jeserver_v2_transport.h mk2_control_core.c mk2_control_core.h; do
+        if [[ -f "$HERE/$file" && -r "$HERE/$file" ]]; then
+            printf 'SOURCE_PRESENT=%s\n' "$file"
+        else
+            printf 'SOURCE_MISSING=%s\n' "$file"
+            missing=1
+        fi
+    done
+    [[ "$missing" == 0 ]] || printf '%s\n' 'BLOCKER=engine source set incomplete'
+    printf '%s\n' \
+        'SIM_PLUGIN_SOURCE=implemented; requires explicit build; no production installation/startup' \
+        'SIM_TRANSPORT=single-executor ZMQ and loopback text-button prototype; not full native UI' \
+        'SDK_LIFECYCLE_PROBE=explicit --check-plugin-sdk/--test-plugin-sdk; isolated and command-locked only' \
+        'BLOCKER=PC generation handshake and reconnect driver transport not implemented' \
+        'BLOCKER=native teach backend routing and pre-start bypass isolation not commissioned' \
+        'WRITER_EVIDENCE=kernel instance observer; three explicit real-SDK virtual Servo exit epochs passed; NOT production acceptance' \
+        'VIRTUAL_HANDOVER=real SDK PC->writer exit->jog/fencing observed; overall FAIL at native STOP state7; no automatic recovery' \
+        'BLOCKER=native jog STOP healthy-idle/resume contract unresolved; state7 remains a latched fault' \
+        'BLOCKER=production writer-exit/exclusive-Start adapter not commissioned' \
+        'BLOCKER=production supervisor integration and startup readiness handshake not commissioned'
+    if [[ -r "$PROFILE/GlobalConfig.yaml" ]]; then
+        printf 'CURRENT_PROFILE=%s\n' "$PROFILE"
+        # Information only; never parse/source YAML as a shell program.
+        grep -E '^plugin_list:' "$PROFILE/GlobalConfig.yaml" || true
+    fi
+    if [[ -r "$ORIGINAL" ]]; then
+        printf 'ORIGINAL_ENTRY_UNCHANGED=%s\n' "$ORIGINAL"
+    fi
+    if command -v pgrep >/dev/null; then
+        if pgrep -x RobotMain >/dev/null; then
+            printf '%s\n' 'EXISTING_ROBOTMAIN=running; left untouched'
+        else
+            printf '%s\n' 'EXISTING_ROBOTMAIN=not observed; not a safety/disabled check'
+        fi
+    fi
+    printf '%s\n' 'NO_CONTROLLER_ACTION=1'
+}
+[[ $# -le 1 ]] || { usage >&2; exit 2; }
+case "${1:---check}" in
+    --help|-h) usage; exit 0 ;;
+    --test)
+        (( EUID != 0 )) || { echo 'Run offline tests as a normal user, not root.' >&2; exit 77; }
+        [[ -r "$HERE/tests/run_jeserver_v2_offline.sh" ]] || {
+            echo 'Offline test runner missing; no fallback.' >&2; exit 78;
+        }
+        exec /bin/bash "$HERE/tests/run_jeserver_v2_offline.sh"
+        ;;
+    --test-plugin|--test-plugin-sandbox|--test-handover-sandbox|--test-session-sandbox|--build-sim-plugin)
+        (( EUID != 0 )) || { echo 'Run builds/tests as a normal user, not root.' >&2; exit 77; }
+        if [[ "$1" == --test-plugin ]]; then
+            exec /bin/bash "$HERE/tests/run_jeserver_v2_plugin_tests.sh"
+        elif [[ "$1" == --test-plugin-sandbox ]]; then
+            exec /bin/bash "$HERE/tests/run_jeserver_v2_sandbox_test.sh"
+        elif [[ "$1" == --test-handover-sandbox ]]; then
+            exec /bin/bash "$HERE/tests/run_jeserver_v2_sandbox_test.sh" --writer-experiment
+        elif [[ "$1" == --test-session-sandbox ]]; then
+            exec /bin/bash "$HERE/tests/run_jeserver_v2_sandbox_test.sh" --session-experiment
+        else
+            exec /bin/bash "$HERE/build_jeserver_v2_sim.sh"
+        fi
+        ;;
+    --test-writer-exit-offline)
+        (( EUID != 0 )) || { echo 'Run tests as a normal user, not root.' >&2; exit 77; }
+        exec /bin/bash "$HERE/tests/run_jeserver_v2_task_watch_tests.sh"
+        ;;
+    --check-plugin-sdk|--test-plugin-sdk|--test-plugin-sdk-offline|--test-writer-exit-virtual|--check-handover-sdk|--test-handover-virtual|--check-teach-sdk|--test-teach-virtual|--test-teach-external-stop-virtual|--test-teach-overlap-stop-virtual)
+        (( EUID != 0 )) || { echo 'Run SDK probe/tests as a normal user, not root.' >&2; exit 77; }
+        case "$1" in
+            --check-plugin-sdk) exec /bin/bash "$HERE/tests/run_jeserver_v2_sdk_probe.sh" --check ;;
+            --test-plugin-sdk) exec /bin/bash "$HERE/tests/run_jeserver_v2_sdk_probe.sh" --load ;;
+            --test-writer-exit-virtual) exec /bin/bash "$HERE/tests/run_jeserver_v2_sdk_probe.sh" --writer-exit-virtual ;;
+            --check-handover-sdk) exec /bin/bash "$HERE/tests/run_jeserver_v2_sdk_probe.sh" --check-handover-virtual ;;
+            --test-handover-virtual) exec /bin/bash "$HERE/tests/run_jeserver_v2_sdk_probe.sh" --handover-virtual ;;
+            --check-teach-sdk) exec /bin/bash "$HERE/tests/run_jeserver_v2_sdk_probe.sh" --check-teach-virtual ;;
+            --test-teach-virtual) exec /bin/bash "$HERE/tests/run_jeserver_v2_sdk_probe.sh" --teach-virtual ;;
+            --test-teach-external-stop-virtual) exec /bin/bash "$HERE/tests/run_jeserver_v2_sdk_probe.sh" --teach-external-stop-virtual ;;
+            --test-teach-overlap-stop-virtual) exec /bin/bash "$HERE/tests/run_jeserver_v2_sdk_probe.sh" --teach-overlap-stop-virtual ;;
+            --test-plugin-sdk-offline) exec /bin/bash "$HERE/tests/run_jeserver_v2_sdk_probe_offline.sh" ;;
+        esac
+        ;;
+    --check|--check-sim) report; exit 78 ;;
+    --auto|--start|--real|--sim)
+        report >&2
+        printf '%s\n' 'START_REFUSED: production routing, writer exit and protected startup not commissioned; no old-plugin fallback.' >&2
+        exit 78
+        ;;
+    *) usage >&2; exit 2 ;;
+esac

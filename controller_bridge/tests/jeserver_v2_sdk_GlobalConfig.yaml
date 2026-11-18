@@ -1,0 +1,10 @@
+---
+version:
+  major: 12
+  minor: 2
+  build: 1
+serial: JE
+description: Isolated JEServer_v2 SDK lifecycle probe
+app_path: /tmp/mk2-pro/profile/app
+simulation: true
+plugin_list: []

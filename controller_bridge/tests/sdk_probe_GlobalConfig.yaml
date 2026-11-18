@@ -1,0 +1,10 @@
+---
+version:
+  major: 12
+  minor: 2
+  build: 1
+serial: JE
+description: Isolated SDK initialization probe
+app_path: /tmp/mk2-probe/profile/app
+simulation: true
+plugin_list: []

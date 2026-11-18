@@ -1,455 +1,919 @@
-<?xml version='1.0' encoding='utf-8'?>
-<robot name="DOUB_JEARM">
-<link name="base_link">
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="je_arm_v2_261112">
+  <link
+    name="base_link">
     <inertial>
-      <origin xyz="0.17289 -3.1568E-05 0.49895" rpy="0 0 0" />
-      <mass value="34.376" />
-      <inertia ixx="3.84" ixy="-7.0188E-05" ixz="0.029534" iyy="3.6687" iyz="0.00010448" izz="0.54186" />
+      <origin
+        xyz="-0.00048896 0.00074385 0.1049"
+        rpy="0 0 0" />
+      <mass
+        value="10.642" />
+      <inertia
+        ixx="0.12356"
+        ixy="-3.7735E-10"
+        ixz="-3.5778E-08"
+        iyy="0.13773"
+        iyz="2.4243E-16"
+        izz="0.18564" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/base/base_link.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/base_link.STL" />
       </geometry>
-      <material name="">
-        <color rgba="1 1 1 1" />
+      <material
+        name="">
+        <color
+          rgba="0.32941 0.33725 0.34902 1" />
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/base/base_link.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/base_link.STL" />
       </geometry>
     </collision>
   </link>
-
-  <link name="left_base" />
-  <joint name="left_base_joint" type="fixed">
-    <origin xyz="-0.0445 -0.2126 0.9008" rpy="1.5708 -1.5708 0" />
-    <parent link="base_link" />
-    <child link="left_base" />
-  </joint>
-
-  <link name="right_base" />
-  <joint name="right_base_joint" type="fixed">
-    <origin xyz="-0.0445 0.2126 0.9008" rpy="1.5708 -1.5708 0" />
-    <parent link="base_link" />
-    <child link="right_base" />
-  </joint>
-
-  
-
-
-  <link name="Link11">
+  <link
+    name="Link1">
     <inertial>
-      <origin xyz="2.7836E-05 0.0032223 -0.0061763" rpy="0 0 0" />
-      <mass value="0.15903" />
-      <inertia ixx="0.00024741" ixy="1.7103E-07" ixz="-5.1201E-08" iyy="0.00018207" iyz="2.5958E-06" izz="0.00021676" />
+      <origin
+        xyz="8.7085E-06 -0.00095097 0.2789"
+        rpy="0 0 0" />
+      <mass
+        value="6.509" />
+      <inertia
+        ixx="0.066242"
+        ixy="1.6336E-06"
+        ixz="2.1566E-07"
+        iyy="0.088254"
+        iyz="4.9974E-06"
+        izz="0.043657" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/left/l_link1.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Link1.STL" />
       </geometry>
-      <material name="">
-        <color rgba="1 1 1 1" />
+      <material
+        name="">
+        <color
+          rgba="0.50196 0.062745 0.062745 1" />
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/left/l_link1.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Link1.STL" />
       </geometry>
     </collision>
   </link>
-  <joint name="joint11" type="revolute">
-    <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 -0.000000 0.000000" />
-    <parent link="left_base" />
-    <child link="Link11" />
-    <axis xyz="0 0 1" />
-    <limit lower="-5.1400" upper="5.1400" effort="100" velocity="3.9800" />
+  <!-- 腰部暂未接入 ros2_control，先固定在 0 位；接入腰部 CAN 控制后改回 revolute -->
+  <joint
+    name="Joint1"
+    type="fixed">
+    <origin
+      xyz="-0.00039604 0 0.4513"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="Link1" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="3.98" />
   </joint>
-  <link name="Link12">
+  <link
+    name="Left_Link1">
     <inertial>
-      <origin xyz="1.3538E-07 -0.025603 0.0022931" rpy="0 0 0" />
-      <mass value="0.24379" />
-      <inertia ixx="0.00094174" ixy="7.9265E-10" ixz="2.0047E-09" iyy="0.00077932" iyz="7.4771E-06" izz="0.00032368" />
+      <origin
+        xyz="8.6168E-05 0.0026582 -0.0237"
+        rpy="0 0 0" />
+      <mass
+        value="0.062225" />
+      <inertia
+        ixx="7.4073E-05"
+        ixy="-1.6152E-07"
+        ixz="-1.0988E-07"
+        iyy="7.8779E-05"
+        iyz="-2.6362E-06"
+        izz="7.5244E-05" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/left/l_link2.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Left_Link1.STL" />
       </geometry>
-      <material name="">
-        <color rgba="1 1 1 1" />
+      <material
+        name="">
+        <color
+          rgba="0.79216 0.81961 0.93333 1" />
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/left/l_link2.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Left_Link1.STL" />
       </geometry>
     </collision>
   </link>
-  <joint name="joint12" type="revolute">
-    <origin xyz="-0.000700 0.001700 0.000001" rpy="-1.573196 0.007100 -0.000017" />
-    <parent link="Link11" />
-    <child link="Link12" />
-    <axis xyz="0 0 1" />
-    <limit lower="-1.8356" upper="1.8220" effort="100" velocity="3.9800" />
+  <joint
+    name="joint11"
+    type="revolute">
+    <origin
+      xyz="0.2501 0 0.3447"
+      rpy="3.14159265 -1.5708 0" />
+    <parent
+      link="Link1" />
+    <child
+      link="Left_Link1" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="3.98" />
   </joint>
-  <link name="Link13">
+  <link
+    name="Left_Link2">
     <inertial>
-      <origin xyz="-0.0013392 0.00027359 -0.078005" rpy="0 0 0" />
-      <mass value="0.24955" />
-      <inertia ixx="0.00049972" ixy="-1.565E-07" ixz="2.0036E-05" iyy="0.00052699" iyz="-5.9993E-07" izz="0.00028114" />
+      <origin
+        xyz="-2.29984778973291E-05 -0.0609368098561109 0.000614656977195205"
+        rpy="0 0 0" />
+      <mass
+        value="0.181400229215531" />
+      <inertia
+        ixx="0.000482160852522418"
+        ixy="-3.69470096963589E-09"
+        ixz="5.98971464751955E-08"
+        iyy="0.000250677802689434"
+        iyz="-9.79501337260166E-05"
+        izz="0.000443667703955581" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/left/l_link3.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Left_Link2.STL" />
       </geometry>
-      <material name="">
-        <color rgba="0.81961 0.81961 0.81961 1" />
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/left/l_link3.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Left_Link2.STL" />
       </geometry>
     </collision>
   </link>
-  <joint name="joint13" type="revolute">
-    <origin xyz="0.000500 -0.273097 -0.001246" rpy="1.575299 0.035000 0.000158" />
-    <parent link="Link12" />
-    <child link="Link13" />
-    <axis xyz="0 0 1" />
-    <limit lower="-2.9600" upper="2.9600" effort="100" velocity="5.5500" />
+  <joint
+    name="joint12"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="Left_Link1" />
+    <child
+      link="Left_Link2" />
+    <axis
+      xyz="6.7032E-05 0 1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="3.98" />
   </joint>
-  <link name="Link14">
+  <link
+    name="Left_Link3">
     <inertial>
-      <origin xyz="0.0025298 -0.015986 -0.0037526" rpy="0 0 0" />
-      <mass value="0.14036" />
-      <inertia ixx="0.0004781" ixy="1.265E-05" ixz="-1.167E-06" iyy="0.00040537" iyz="8.4401E-06" izz="0.00017537" />
+      <origin
+        xyz="-0.00458096023031646 -0.000859034416407223 -0.0421999462290233"
+        rpy="0 0 0" />
+      <mass
+        value="0.151703522474702" />
+      <inertia
+        ixx="0.000361713742019292"
+        ixy="-1.14348321623784E-06"
+        ixz="4.34847975336682E-05"
+        iyy="0.000384226192843693"
+        iyz="4.42037782307567E-06"
+        izz="0.000168570190990881" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/left/l_link4.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Left_Link3.STL" />
       </geometry>
-      <material name="">
-        <color rgba="1 1 1 1" />
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/left/l_link4.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Left_Link3.STL" />
       </geometry>
     </collision>
   </link>
-  <joint name="joint14" type="revolute">
-    <origin xyz="-0.007699 0.001100 0.000109" rpy="-1.572797 0.014500 -0.000029" />
-    <parent link="Link13" />
-    <child link="Link14" />
-    <axis xyz="0 0 1" />
-    <limit lower="-2.2999" upper="1.7904" effort="100" velocity="5.5500" />
+  <joint
+    name="joint13"
+    type="revolute">
+    <origin
+      xyz="0 -0.26764 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Left_Link2" />
+    <child
+      link="Left_Link3" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="3.98" />
   </joint>
-  <link name="Link15">
+  <link
+    name="Left_Link4">
     <inertial>
-      <origin xyz="1.2792E-07 -0.0016321 -0.052024" rpy="0 0 0" />
-      <mass value="0.20346" />
-      <inertia ixx="0.00028328" ixy="-9.1339E-10" ixz="1.3106E-09" iyy="0.00029079" iyz="8.3228E-06" izz="0.00023151" />
+      <origin
+        xyz="0.00844094545151586 -0.047550117723312 -0.00135943742567313"
+        rpy="0 0 0" />
+      <mass
+        value="0.0953602941377876" />
+      <inertia
+        ixx="0.000171877652440406"
+        ixy="1.64405048379419E-05"
+        ixz="-6.1461811205855E-06"
+        iyy="8.44346145383449E-05"
+        iyz="4.00893161706565E-05"
+        izz="0.000156545426552042" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/left/l_link5.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Left_Link4.STL" />
       </geometry>
-      <material name="">
-        <color rgba="0.81961 0.81961 0.81961 1" />
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/left/l_link5.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Left_Link4.STL" />
       </geometry>
     </collision>
   </link>
-  <joint name="joint15" type="revolute">
-    <origin xyz="0.008800 -0.219397 -0.001140" rpy="1.576096 -0.002600 -0.000014" />
-    <parent link="Link14" />
-    <child link="Link15" />
-    <axis xyz="0 0 1" />
-    <limit lower="-2.9600" upper="2.9600" effort="100" velocity="5.5500" />
+  <joint
+    name="joint14"
+    type="revolute">
+    <origin
+      xyz="-0.015 0 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="Left_Link3" />
+    <child
+      link="Left_Link4" />
+    <axis
+      xyz="-6.7032E-05 0 -1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="3.98" />
   </joint>
-  <link name="Link16">
+  <link
+    name="Left_Link5">
     <inertial>
-      <origin xyz="-4.9639E-08 -0.048851 0.0014891" rpy="0 0 0" />
-      <mass value="0.13951" />
-      <inertia ixx="0.00023544" ixy="8.0518E-10" ixz="-6.4098E-10" iyy="0.00016545" iyz="5.5234E-05" izz="0.00018838" />
+      <origin
+        xyz="-2.41325565381034E-06 0.0349192991600771 0.0006650795184866"
+        rpy="0 0 0" />
+      <mass
+        value="0.00750499143804092" />
+      <inertia
+        ixx="1.90881077975022E-06"
+        ixy="-1.33807283173073E-10"
+        ixz="-1.94832913620365E-11"
+        iyy="3.90316284755611E-06"
+        iyz="1.19573297881037E-08"
+        izz="2.04614670934461E-06" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/left/l_link6.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Left_Link5.STL" />
       </geometry>
-      <material name="">
-        <color rgba="0.81961 0.81961 0.81961 1" />
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/left/l_link6.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Left_Link5.STL" />
       </geometry>
     </collision>
   </link>
-  <joint name="joint16" type="revolute">
-    <origin xyz="0.000100 0.000100 -0.000003" rpy="-1.572997 0.023300 -0.000051" />
-    <parent link="Link15" />
-    <child link="Link16" />
-    <axis xyz="0 0 1" />
-    <limit lower="-1.5981" upper="1.5442" effort="100" velocity="5.5500" />
+  <joint
+    name="joint15"
+    type="revolute">
+    <origin
+      xyz="0.015 -0.2026 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Left_Link4" />
+    <child
+      link="Left_Link5" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="3.98" />
   </joint>
-  <link name="Link17">
+  <link
+    name="Left_Link6">
     <inertial>
-      <origin xyz="0.012652 0.00060356 0.067612" rpy="0 0 0" />
-      <mass value="0.36915" />
-      <inertia ixx="0.00044755" ixy="-1.4027E-07" ixz="5.8354E-06" iyy="0.00033738" iyz="-7.6821E-06" izz="0.00018678" />
+      <origin
+        xyz="-7.22196744351589E-07 -0.0511482055472117 -0.00735405160460822"
+        rpy="0 0 0" />
+      <mass
+        value="0.0471099621602068" />
+      <inertia
+        ixx="6.61421634289241E-05"
+        ixy="-9.71600196832163E-10"
+        ixz="7.35042054062738E-10"
+        iyy="3.90746627317758E-05"
+        iyz="1.49641024544376E-05"
+        izz="6.0128935832862E-05" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/left/l_link7.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Left_Link6.STL" />
       </geometry>
-      <material name="">
-        <color rgba="0.81961 0.81961 0.81961 1" />
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/left/l_link7.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Left_Link6.STL" />
       </geometry>
     </collision>
   </link>
-  <joint name="joint17" type="revolute">
-    <origin xyz="0.000200 -0.128900 -0.000190" rpy="1.572297 -0.019000 -0.000029" />
-    <parent link="Link16" />
-    <child link="Link17" />
-    <axis xyz="0 0 1" />
-    <limit lower="-2.9600" upper="2.9600" effort="100" velocity="5.8600" />
+  <joint
+    name="joint16"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="Left_Link5" />
+    <child
+      link="Left_Link6" />
+    <axis
+      xyz="-6.7032E-05 0 -1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="3.98" />
   </joint>
-
-  
-  
-
-
-  <link name="Link21">
+  <link
+    name="Left_Link7">
     <inertial>
-      <origin xyz="-2.7836E-05 0.0032223 0.0061763" rpy="0 0 0" />
-      <mass value="0.15903" />
-      <inertia ixx="0.00024741" ixy="-1.7103E-07" ixz="-5.1201E-08" iyy="0.00018207" iyz="-2.5958E-06" izz="0.00021676" />
+      <origin
+        xyz="-0.000209304312418834 7.65124192447786E-07 0.0753690929124192"
+        rpy="0 0 0" />
+      <mass
+        value="0.233250745878803" />
+      <inertia
+        ixx="0.000128503958627717"
+        ixy="4.29911565549227E-07"
+        ixz="-1.21516515451842E-07"
+        iyy="7.67782963076076E-05"
+        iyz="2.64064834363548E-11"
+        izz="0.000134154622674188" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/right/r_link1.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Left_Link7.STL" />
       </geometry>
-      <material name="">
-        <color rgba="1 1 1 1" />
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/right/r_link1.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Left_Link7.STL" />
       </geometry>
     </collision>
   </link>
-  <joint name="joint21" type="revolute">
-    <origin xyz="0.000000 0.000000 0.000000" rpy="0.000000 -0.000000 0.000000" />
-    <parent link="right_base" />
-    <child link="Link21" />
-    <axis xyz="0 0 1" />
-    <limit lower="-5.1400" upper="5.1400" effort="100" velocity="3.9800" />
+  <joint
+    name="joint17"
+    type="revolute">
+    <origin
+      xyz="0 -0.095 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Left_Link6" />
+    <child
+      link="Left_Link7" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="3.98" />
   </joint>
-  <link name="Link22">
+  <link
+    name="Right_Link1">
     <inertial>
-      <origin xyz="-1.6327E-07 -0.025603 -0.0022931" rpy="0 0 0" />
-      <mass value="0.24379" />
-      <inertia ixx="0.00094174" ixy="-7.9265E-10" ixz="2.0047E-09" iyy="0.00077932" iyz="-7.4771E-06" izz="0.00032368" />
+      <origin
+        xyz="8.6499619091851E-05 0.00265823080380034 -0.0236996505532415"
+        rpy="0 0 0" />
+      <mass
+        value="0.0622249106272929" />
+      <inertia
+        ixx="7.4073099459748E-05"
+        ixy="-1.60933668950449E-07"
+        ixz="-1.10213817865315E-07"
+        iyy="7.87791667555467E-05"
+        iyz="-2.63622087242783E-06"
+        izz="7.52443932157701E-05" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/right/r_link2.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Right_Link1.STL" />
       </geometry>
-      <material name="">
-        <color rgba="1 1 1 1" />
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/right/r_link2.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Right_Link1.STL" />
       </geometry>
     </collision>
   </link>
-  <joint name="joint22" type="revolute">
-    <origin xyz="-0.001200 0.000900 0.000007" rpy="1.578797 -0.011200 -0.000090" />
-    <parent link="Link21" />
-    <child link="Link22" />
-    <axis xyz="0 0 1" />
-    <limit lower="-1.8100" upper="1.8100" effort="100" velocity="3.9800" />
+  <joint
+    name="joint21"
+    type="revolute">
+    <origin
+      xyz="-0.2501 0 0.3447"
+      rpy="0 -1.5708 0" />
+    <parent
+      link="Link1" />
+    <child
+      link="Right_Link1" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="3.98" />
   </joint>
-  <link name="Link23">
+  <link
+    name="Right_Link2">
     <inertial>
-      <origin xyz="-0.0013392 -0.00027359 0.078005" rpy="0 0 0" />
-      <mass value="0.24955" />
-      <inertia ixx="0.00049972" ixy="1.565E-07" ixz="-2.0036E-05" iyy="0.00052699" iyz="-5.9993E-07" izz="0.00028114" />
+      <origin
+        xyz="-2.29224114818294E-05 0.060936810403702 -0.00061466089203277"
+        rpy="0 0 0" />
+      <mass
+        value="0.181400237975034" />
+      <inertia
+        ixx="0.000482160862538227"
+        ixy="1.59133970105643E-08"
+        ixz="-5.50972772636661E-08"
+        iyy="0.000250677805805873"
+        iyz="-9.79501326579931E-05"
+        izz="0.00044366768530034" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/right/r_link3.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Right_Link2.STL" />
       </geometry>
-      <material name="">
-        <color rgba="0.81961 0.81961 0.81961 1" />
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/right/r_link3.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Right_Link2.STL" />
       </geometry>
     </collision>
   </link>
-  <joint name="joint23" type="revolute">
-    <origin xyz="0.001400 -0.271542 0.005622" rpy="-1.591497 -0.007498 0.000155" />
-    <parent link="Link22" />
-    <child link="Link23" />
-    <axis xyz="0 0 1" />
-    <limit lower="-3.1400" upper="3.1400" effort="100" velocity="5.5500" />
+  <joint
+    name="joint22"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Right_Link1" />
+    <child
+      link="Right_Link2" />
+    <axis
+      xyz="-5.7704E-05 0 -1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="3.98" />
   </joint>
-  <link name="Link24">
+  <link
+    name="Right_Link3">
     <inertial>
-      <origin xyz="0.0025298 -0.015986 -0.0037526" rpy="0 0 0" />
-      <mass value="0.14036" />
-      <inertia ixx="0.0004781" ixy="1.265E-05" ixz="-1.167E-06" iyy="0.00040537" iyz="8.4401E-06" izz="0.00017537" />
+      <origin
+        xyz="-0.00458106743207914 -0.000858462912648905 -0.0421999461672357"
+        rpy="0 0 0" />
+      <mass
+        value="0.151703521622426" />
+      <inertia
+        ixx="0.000361713456253545"
+        ixy="-1.14067504157186E-06"
+        ixz="4.3485348282942E-05"
+        iyy="0.000384226476859797"
+        iyz="4.41495420004637E-06"
+        izz="0.000168570190308107" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/right/r_link4.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Right_Link3.STL" />
       </geometry>
-      <material name="">
-        <color rgba="1 1 1 1" />
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/right/r_link4.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Right_Link3.STL" />
       </geometry>
     </collision>
   </link>
-  <joint name="joint24" type="revolute">
-    <origin xyz="-0.000008 0.000800 0.000002" rpy="1.573898 0.027600 0.000086" />
-    <parent link="Link23" />
-    <child link="Link24" />
-    <axis xyz="0 0 1" />
-    <limit lower="-2.2000" upper="1.8000" effort="100" velocity="5.5500" />
+  <joint
+    name="joint23"
+    type="revolute">
+    <origin
+      xyz="0 0.26764 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="Right_Link2" />
+    <child
+      link="Right_Link3" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="3.98" />
   </joint>
-  <link name="Link25">
+  <link
+    name="Right_Link4">
     <inertial>
-      <origin xyz="1.2792E-07 0.0016321 0.052024" rpy="0 0 0" />
-      <mass value="0.20346" />
-      <inertia ixx="0.00028328" ixy="9.1339E-10" ixz="-1.3106E-09" iyy="0.00029079" iyz="8.3228E-06" izz="0.00023151" />
+      <origin
+        xyz="0.00844076561121246 0.0475501090531815 0.00136050439150526"
+        rpy="0 0 0" />
+      <mass
+        value="0.0953603414755677" />
+      <inertia
+        ixx="0.000171876098317553"
+        ixy="-1.6445507886815E-05"
+        ixz="6.14809287095204E-06"
+        iyy="8.44345940852496E-05"
+        iyz="4.00872550785912E-05"
+        izz="0.000156546942279084" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/right/r_link5.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Right_Link4.STL" />
       </geometry>
-      <material name="">
-        <color rgba="0.81961 0.81961 0.81961 1" />
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/right/r_link5.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Right_Link4.STL" />
       </geometry>
     </collision>
   </link>
-  <joint name="joint25" type="revolute">
-    <origin xyz="0.000008 -0.218898 0.000832" rpy="-1.574597 0.020700 -0.000079" />
-    <parent link="Link24" />
-    <child link="Link25" />
-    <axis xyz="0 0 1" />
-    <limit lower="-3.1400" upper="3.1400" effort="100" velocity="5.5500" />
+  <joint
+    name="joint24"
+    type="revolute">
+    <origin
+      xyz="-0.015 0 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Right_Link3" />
+    <child
+      link="Right_Link4" />
+    <axis
+      xyz="5.7704E-05 0 1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="3.98" />
   </joint>
-  <link name="Link26">
+  <link
+    name="Right_Link5">
     <inertial>
-      <origin xyz="-4.9639E-08 -0.048851 0.0014891" rpy="0 0 0" />
-      <mass value="0.13951" />
-      <inertia ixx="0.00023544" ixy="8.0518E-10" ixz="-6.4098E-10" iyy="0.00016545" iyz="5.5234E-05" izz="0.00018838" />
+      <origin
+        xyz="1.94243676621131E-06 0.0349192991894404 0.00066508133350951"
+        rpy="0 0 0" />
+      <mass
+        value="0.00750499143803997" />
+      <inertia
+        ixx="1.90881077739821E-06"
+        ixy="1.14960150369536E-10"
+        ixz="-1.79918027392535E-11"
+        iyy="3.90316284986584E-06"
+        iyz="1.19573321253272E-08"
+        izz="2.04614670930452E-06" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/right/r_link6.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Right_Link5.STL" />
       </geometry>
-      <material name="">
-        <color rgba="0.81961 0.81961 0.81961 1" />
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/right/r_link6.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Right_Link5.STL" />
       </geometry>
     </collision>
   </link>
-  <joint name="joint26" type="revolute">
-    <origin xyz="-0.000300 -0.000200 -0.000000" rpy="1.572497 -0.022300 -0.000038" />
-    <parent link="Link25" />
-    <child link="Link26" />
-    <axis xyz="0 0 1" />
-    <limit lower="-1.5800" upper="1.5400" effort="100" velocity="5.5500" />
+  <joint
+    name="joint25"
+    type="revolute">
+    <origin
+      xyz="0.015 0.2026 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="Right_Link4" />
+    <child
+      link="Right_Link5" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="3.98" />
   </joint>
-  <link name="Link27">
+  <link
+    name="Right_Link6">
     <inertial>
-      <origin xyz="0.012652 0.00064615 -0.067442" rpy="0 0 0" />
-      <mass value="0.36915" />
-      <inertia ixx="0.00044759" ixy="3.5408E-08" ixz="-5.838E-06" iyy="0.00033738" iyz="7.6361E-06" izz="0.00018678" />
+      <origin
+        xyz="-1.63958852700263E-06 0.0511482073460438 0.00735405148455559"
+        rpy="0 0 0" />
+      <mass
+        value="0.0471099622711888" />
+      <inertia
+        ixx="6.6142163528627E-05"
+        ixy="-8.9499413776544E-10"
+        ixz="1.482973359385E-11"
+        iyy="3.90746627824153E-05"
+        iyz="1.49641024934756E-05"
+        izz="6.01289358294744E-05" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/right/r_link7.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Right_Link6.STL" />
       </geometry>
-      <material name="">
-        <color rgba="0.81961 0.81961 0.81961 1" />
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://my_jearm_moveit_config/config/meshes/right/r_link7.STL" />
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Right_Link6.STL" />
       </geometry>
     </collision>
   </link>
-  <joint name="joint27" type="revolute">
-    <origin xyz="-0.000200 -0.129400 0.000078" rpy="-1.571402 -0.131900 0.000080" />
-    <parent link="Link26" />
-    <child link="Link27" />
-    <axis xyz="0 0 1" />
-    <limit lower="-3.1400" upper="3.1400" effort="100" velocity="5.8600" />
+  <joint
+    name="joint26"
+    type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Right_Link5" />
+    <child
+      link="Right_Link6" />
+    <axis
+      xyz="5.7704E-05 0 1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="3.98" />
+  </joint>
+  <link
+    name="Right_Link7">
+    <inertial>
+      <origin
+        xyz="-0.00021350050303337 7.83760250699927E-07 0.0771021181934604"
+        rpy="0 0 0" />
+      <mass
+        value="0.228681876880678" />
+      <inertia
+        ixx="0.000126772612895493"
+        ixy="4.2344438409972E-07"
+        ixz="-1.21455160980142E-07"
+        iyy="7.50467739955374E-05"
+        iyz="5.68161868460346E-11"
+        izz="0.000133647954271866" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Right_Link7.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://my_jearm_moveit_config/config/meshes/waist/Right_Link7.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint27"
+    type="revolute">
+    <origin
+      xyz="0 0.095 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="Right_Link6" />
+    <child
+      link="Right_Link7" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="3.98" />
   </joint>
 
   <ros2_control name="jearm_system" type="system">
