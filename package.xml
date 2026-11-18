@@ -26,6 +26,8 @@
   <depend>action_msgs</depend>
   <depend>control_msgs</depend>
   <depend>controller_manager</depend>
+  <depend>hardware_interface</depend>
+  <depend>lifecycle_msgs</depend>
   <depend>realtime_tools</depend>
   <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
@@ -37,11 +39,20 @@
   <exec_depend>python3-yaml</exec_depend>
   <exec_depend>python3-zmq</exec_depend>
   <exec_depend>rclpy</exec_depend>
+  <depend>controller_manager_msgs</depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
   <exec_depend>joint_state_broadcaster</exec_depend>
   <exec_depend>joint_trajectory_controller</exec_depend>
   <exec_depend>je_software</exec_depend>
 
   <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>pkg-config</test_depend>
+  <test_depend>libjson-c-dev</test_depend>
+  <test_depend>libzmq3-dev</test_depend>
+  <test_depend>rmw</test_depend>
+  <test_depend>rmw_fastrtps_cpp</test_depend>
+  <test_depend>fastrtps</test_depend>
   <test_depend>rostest</test_depend>
 
   <export>

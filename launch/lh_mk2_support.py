@@ -22,7 +22,9 @@ class FeedbackReadyGate:
         return True
 
 
-def build_hardware_description(urdf, srdf, hardware, robot_ip, state_port, command_port):
+def build_hardware_description(urdf, srdf, hardware, robot_ip, state_port, command_port,
+                               control_backend='simulation', confirm_physical_control=False,
+                               shared_ownership=False):
     """Preserve the teach-pendant URDF geometry and joint direction conventions.
 
     User verified the source model's motion against the physical arm. Do not
@@ -30,6 +32,10 @@ def build_hardware_description(urdf, srdf, hardware, robot_ip, state_port, comma
     SDK positions pass through unchanged; encoder calibration is not reapplied.
     Hardware bounds, interfaces and a separate fixed flange are the only additions.
     """
+    if control_backend not in ('simulation', 'physical'):
+        raise ValueError('control_backend must be simulation or physical')
+    if control_backend == 'physical' and not confirm_physical_control:
+        raise ValueError('Physical control requires separate explicit confirmation')
     axes = hardware['axes']
     if [axis['name'] for axis in axes] != [f'joint{i}' for i in range(1, 8)]:
         raise ValueError('MK2 requires exactly joint1..joint7 in SDK axis order')
@@ -80,8 +86,15 @@ def build_hardware_description(urdf, srdf, hardware, robot_ip, state_port, comma
     ET.SubElement(driver, 'plugin').text = 'je_software/JeZmqSystemHardware'
     for name, value in {'robot_ip': robot_ip, 'sub_port': state_port,
                         'pub_port': command_port,
+                        'mk2_gripper_port': int(command_port) + 1,
+                        'mk2_gripper_feedback_port': int(command_port) + 2,
                         'command_dt': hardware['transport']['command_dt'],
                         'mk2_guarded_control': 'true',
+                        'mk2_shared_ownership': str(shared_ownership).lower(),
+                        'mk2_expected_backend': ('physical' if control_backend == 'physical'
+                                                 else 'sdk_simulation'),
+                        'mk2_device_config_sha256': hardware['source']['sha256'],
+                        'mk2_confirm_physical_control': str(confirm_physical_control).lower(),
                         'mk2_feedback_timeout': '0.15'}.items():
         ET.SubElement(driver, 'param', name=name).text = str(value)
     for axis in axes:

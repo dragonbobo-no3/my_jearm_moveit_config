@@ -136,6 +136,7 @@ int mk2_core_init(struct mk2_core *core, const struct mk2_policy *policy, const 
     core->policy = *policy;
     core->io = *io;
     core->phase = policy->allow_commands ? MK2_READY : MK2_LOCKED;
+    core->rearm_since = -1;
     return 0;
 }
 static bool sample_in_bounds(const struct mk2_core *core, const struct mk2_sample *sample)
@@ -151,16 +152,118 @@ bool mk2_core_commands_available(const struct mk2_core *core, const struct mk2_s
            (core->phase == MK2_ACTIVE ||
             ((core->phase == MK2_READY || core->phase == MK2_WAIT_FIRST) && sample->move_state == 0));
 }
+void mk2_core_record_state_error(struct mk2_core *core, const char *site, double now,
+                                const struct mk2_sample *sample, bool have_command_time, double command_time)
+{
+    if (core->first_state_error.captured || core->fault != MK2_NO_FAULT) return;
+    struct mk2_state_failure *failure = &core->first_state_error;
+    failure->captured = true;
+    failure->site = site;
+    failure->phase = core->phase;
+    failure->monotonic_time = now;
+    failure->have_sample = sample != NULL;
+    failure->have_command_time = have_command_time;
+    failure->command_time = command_time;
+    if (sample) {
+        failure->sample = *sample;
+        if (!sample->valid) failure->failed_checks |= MK2_CHECK_INVALID_SAMPLE;
+        if (sample->power != 1) failure->failed_checks |= MK2_CHECK_POWER;
+        if (sample->driver_error != 0) failure->failed_checks |= MK2_CHECK_DRIVER;
+        if (sample->move_error != 0) failure->failed_checks |= MK2_CHECK_MOVE_ERROR;
+        if (sample->move_state < 0 || sample->move_state == 7) failure->failed_checks |= MK2_CHECK_MOVE_STATE;
+        if (core->phase == MK2_WAIT_FIRST && sample->move_state != 0)
+            failure->failed_checks |= MK2_CHECK_FIRST_NOT_IDLE;
+        for (int i = 0; i < MK2_AXES; i++) {
+            if (!isfinite(sample->joint[i])) failure->failed_checks |= MK2_CHECK_NONFINITE;
+            else if (sample->joint[i] < core->policy.lower[i] || sample->joint[i] > core->policy.upper[i])
+                failure->failed_checks |= MK2_CHECK_BOUNDS;
+        }
+    }
+    if (have_command_time && command_time <= 0) failure->failed_checks |= MK2_CHECK_COMMAND_TIME;
+}
 void mk2_core_stop(struct mk2_core *core, enum mk2_fault reason)
 {
+    bool latched = false;
     if (core->owns_servo) {
         int stop = core->io.stop(core->io.context);
         int end = core->io.end(core->io.context);
         if (!core->sdk_error) core->sdk_error = stop ? stop : end;
         core->owns_servo = false;
+        latched = stop == 0;
     }
     core->fault = core->sdk_error ? MK2_SDK_ERROR : reason;
     core->phase = core->fault == MK2_NO_FAULT ? MK2_STOPPED : MK2_FAULT;
+    core->rearm_since = -1;
+    core->stop_latch_ours = latched;
+    core->rearm_recovered = false;
+}
+/* Eligible ONLY for a clean stop, or a fault whose first cause, observed by the
+ * active-servo tick, was the SDK forced stop (move_state 7) and/or power loss
+ * (pendant disable), with no other failed check. Re-enable is the operator's
+ * action; rearm itself still needs sustained powered healthy idle. Driver/move
+ * errors, bounds, watchdog, timing, limits, frames and SDK call failures stay
+ * latched until RobotMain restart. */
+static bool rearm_cause_ok(const struct mk2_core *core)
+{
+    if (!core->rearm_after_forced_stop || !core->policy.allow_commands ||
+        core->owns_servo || core->sdk_error) return false;
+    if (core->phase == MK2_STOPPED) return core->fault == MK2_NO_FAULT;
+    const struct mk2_state_failure *f = &core->first_state_error;
+    return core->phase == MK2_FAULT && core->fault == MK2_STATE_ERROR && f->captured &&
+           f->have_sample && f->site && !strcmp(f->site, "control_tick") &&
+           f->phase == MK2_ACTIVE && f->failed_checks &&
+           !(f->failed_checks & ~(MK2_CHECK_MOVE_STATE | MK2_CHECK_POWER));
+}
+/* Healthy, powered, in-bounds feedback whose only abnormality is the SDK stop
+ * latch (move_state 7). */
+static bool stop_latched_idle(const struct mk2_core *core, const struct mk2_sample *sample)
+{
+    if (!sample || sample->move_state != 7) return false;
+    struct mk2_sample unlatched = *sample;
+    unlatched.move_state = 0;
+    return sample_in_bounds(core, &unlatched);
+}
+/* READY moves nothing: a new session still needs the PC preflight, Switch, a
+ * first hold at the measured pose and all first-frame checks, exactly as after
+ * a RobotMain restart. Our own RobotStop(0) leaves move_state 7 latched; that
+ * latch (and only while it has been continuously ours: no idle, power, error or
+ * bounds change since the stop) is cleared by ONE io.recover after the same
+ * stationary interval, then the normal move_state 0 interval is required. */
+static void tick_rearm(struct mk2_core *core, double now, const struct mk2_sample *sample)
+{
+    bool latched = stop_latched_idle(core, sample);
+    bool idle = sample_in_bounds(core, sample) && sample->move_state == 0;
+    if (idle || (!latched && !sample_in_bounds(core, sample)) ||
+        (core->first_state_error.captured && (core->first_state_error.failed_checks & MK2_CHECK_POWER)))
+        core->stop_latch_ours = false; /* a 7 after power loss may be the pendant's */
+    bool recoverable = latched && core->stop_latch_ours && core->io.recover && !core->rearm_recovered;
+    if (!rearm_cause_ok(core) || !isfinite(now) || !(idle || recoverable)) {
+        core->rearm_since = -1;
+        return;
+    }
+    bool stationary = core->rearm_since >= 0 && now >= core->rearm_since;
+    for (int i = 0; stationary && i < MK2_AXES; i++)
+        if (fabs(sample->joint[i] - core->rearm_joint[i]) > MK2_REARM_STATIONARY_RAD) stationary = false;
+    if (!stationary) {
+        memcpy(core->rearm_joint, sample->joint, sizeof(core->rearm_joint));
+        core->rearm_since = now;
+        return;
+    }
+    if (now - core->rearm_since < MK2_REARM_SETTLE_SECONDS) return;
+    if (latched) {
+        core->rearm_recovered = true;
+        core->rearm_since = -1;
+        core->rearm_recovers++;
+        core->sdk_error = core->io.recover(core->io.context);
+        if (core->sdk_error) mk2_core_stop(core, MK2_SDK_ERROR); /* latched for good */
+        return;
+    }
+    core->phase = MK2_READY;
+    core->fault = MK2_NO_FAULT;
+    core->first_state_error = (struct mk2_state_failure){0};
+    core->servo_observation = (struct mk2_servo_observation){0};
+    core->rearm_since = -1;
+    core->rearm_count++;
 }
 static int reject(struct mk2_core *core, enum mk2_fault reason)
 {
@@ -168,8 +271,33 @@ static int reject(struct mk2_core *core, enum mk2_fault reason)
     if (core->owns_servo || core->phase == MK2_WAIT_FIRST) mk2_core_stop(core, reason);
     return -1;
 }
+static void observe_servo_sample(struct mk2_core *core, double now, const struct mk2_sample *sample)
+{
+    if (core->phase != MK2_ACTIVE || !core->owns_servo || !sample) return;
+    struct mk2_servo_observation *observation = &core->servo_observation;
+    if (finite_sample(sample) && sample->move_state == MK2_OBSERVED_SDK_SERVO_STATE)
+        observation->seen_servo_state = true;
+    if (observation->seen_servo_state && sample->move_state != MK2_OBSERVED_SDK_SERVO_STATE &&
+        !observation->first_nonservo_captured) {
+        observation->first_nonservo_captured = true;
+        observation->servo_state_seen_before = observation->seen_servo_state;
+        observation->input_monotonic_time = now;
+        observation->first_nonservo_sample = *sample;
+    }
+}
+static void observe_sdk_call(struct mk2_core *core, enum mk2_sdk_call call, int result,
+                             double now, double command_time, const struct mk2_sample *input)
+{
+    core->servo_observation.last_call = (struct mk2_sdk_call_observation){
+        .call = call, .phase = core->phase, .result = result,
+        .input_monotonic_time = now, .command_time = command_time, .input_sample = *input
+    };
+}
 void mk2_core_tick(struct mk2_core *core, double now, const struct mk2_sample *sample)
 {
+    /* Memory copies only, before Stop/End can alter the SDK input. This does
+     * not classify a pendant event or change any guard/phase below. */
+    observe_servo_sample(core, now, sample);
     if (core->phase == MK2_RELEASING) {
         /* SDK StopRun is not StopRecover. Verify a fresh stationary interval
          * before closing servo; no new Joint/Switch intent during release. */
@@ -178,6 +306,7 @@ void mk2_core_tick(struct mk2_core *core, double now, const struct mk2_sample *s
         }
         core->last_receive = now;
         if (!sample_in_bounds(core, sample)) {
+            mk2_core_record_state_error(core, "release_tick", now, sample, false, 0);
             mk2_core_stop(core, MK2_STATE_ERROR); return;
         }
         if (now - core->release_start > core->policy.first_timeout) {
@@ -196,10 +325,16 @@ void mk2_core_tick(struct mk2_core *core, double now, const struct mk2_sample *s
         }
         return;
     }
+    if (!core->owns_servo && (core->phase == MK2_STOPPED || core->phase == MK2_FAULT)) {
+        tick_rearm(core, now, sample);
+        return;
+    }
     if (!core->owns_servo && core->phase != MK2_WAIT_FIRST) return;
     if (!isfinite(now) || now < core->last_receive) mk2_core_stop(core, MK2_CLOCK_ERROR);
-    else if (!sample_in_bounds(core, sample) || (core->phase == MK2_WAIT_FIRST && sample->move_state != 0))
+    else if (!sample_in_bounds(core, sample) || (core->phase == MK2_WAIT_FIRST && sample->move_state != 0)) {
+        mk2_core_record_state_error(core, "control_tick", now, sample, false, 0);
         mk2_core_stop(core, MK2_STATE_ERROR);
+    }
     else if (now - core->last_receive > (core->phase == MK2_WAIT_FIRST ? core->policy.first_timeout : core->policy.watchdog))
         mk2_core_stop(core, MK2_WATCHDOG);
 }
@@ -293,15 +428,38 @@ int mk2_core_handle(struct mk2_core *core, const char *frame, size_t length, dou
                 else if (!isfinite(acceleration) || fabs(acceleration) > core->policy.acceleration[i] + 1e-9) fault = MK2_ACCELERATION;
             }
         }
-        if (fault) result = reject(core, fault);
+        if (fault) {
+            if (fault == MK2_STATE_ERROR)
+                mk2_core_record_state_error(core, "joint_command", now, sample, true, data_time);
+            result = reject(core, fault);
+        }
         else {
+            /* Copy BEFORE callbacks: even a failed SDK call may change state.
+             * No extra SDK read, formatting or logging before the stop path. */
+            const struct mk2_sample sdk_input = *sample;
             if (first) {
+                core->servo_observation = (struct mk2_servo_observation){0};
+                /* Gen-1-style activation recovery: clear a latched forced-stop
+                 * (observed SDK move_state 7) once, BEFORE opening servo. This
+                 * never powers off or clears driver/move faults; those were
+                 * already rejected above. A failed recover means servo was not
+                 * opened, so no stop/end cleanup is owed. */
+                if (core->io.recover) {
+                    core->sdk_error = core->io.recover(core->io.context);
+                    observe_sdk_call(core, MK2_SDK_CALL_RECOVER, core->sdk_error, now, data_time, &sdk_input);
+                }
                 /* A failed SDK start can have partial side effects, so acquire
                  * cleanup responsibility immediately before making that call. */
-                core->owns_servo = true;
-                core->sdk_error = core->io.start(core->io.context, core->policy.servo_q, core->policy.servo_r);
+                if (!core->sdk_error) {
+                    core->owns_servo = true;
+                    core->sdk_error = core->io.start(core->io.context, core->policy.servo_q, core->policy.servo_r);
+                    observe_sdk_call(core, MK2_SDK_CALL_START, core->sdk_error, now, data_time, &sdk_input);
+                }
             }
-            if (!core->sdk_error) core->sdk_error = core->io.joint(core->io.context, target, data_time);
+            if (!core->sdk_error) {
+                core->sdk_error = core->io.joint(core->io.context, target, data_time);
+                observe_sdk_call(core, MK2_SDK_CALL_JOINT, core->sdk_error, now, data_time, &sdk_input);
+            }
             if (core->sdk_error) mk2_core_stop(core, MK2_SDK_ERROR);
             else {
                 if (first) { core->first_receive = now; core->first_data_time = data_time; }
@@ -326,4 +484,9 @@ const char *mk2_fault_name(enum mk2_fault fault)
         "first_target_not_hold", "following_error", "velocity_limit", "acceleration_limit", "watchdog",
         "sdk_error", "state_error", "clock_error", "plugin_unload"};
     return fault >= MK2_NO_FAULT && fault <= MK2_UNLOAD ? names[fault] : "invalid";
+}
+const char *mk2_sdk_call_name(enum mk2_sdk_call call)
+{
+    static const char *names[] = {"none", "RobotStopRecover", "ServoStart", "ServoJoint"};
+    return call >= MK2_SDK_CALL_NONE && call <= MK2_SDK_CALL_JOINT ? names[call] : "invalid";
 }

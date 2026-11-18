@@ -76,17 +76,24 @@ from unverified legacy comments:
 - `ServoEnd(0)` closes the SDK servo function. It returns int, 0 success; its
   actual braking/holding behavior must be verified, not assumed from the name.
 - `get_robot_move_state(0)`: 0 normal, negative abnormal, 7 forced stop, other
-  positive values indicate running. Startup requires 0; external forced stop 7
-  during ownership faults the bridge and is never automatically recovered.
+  positive values indicate running. Startup requires 0. The physical build
+  clears a latched forced stop (state 7) exactly **once**, at first-hold servo
+  start, via a single `RobotStopRecover(0)` before `ServoStart` (the gen-1
+  activation sequence, minus power cycle and error clear). A forced stop that
+  appears later, during ownership, still faults the bridge and is never
+  automatically recovered.
 - `GetRobotPowerState(0) == 1` means all robot axes enabled; 0 only means at
   least one disabled. `IsRobotDriverError` / `IsRobotMoveError` must both be zero.
   Before deployment/restart, independently verify **each** physical axis is
   disabled. The aggregate getter is not sufficient for that safety check.
 
-The new plugin imports no `RobotPower`, `RobotPoweroff`, `ClearRobotError`,
-`RobotStopRecover`, calibration, Cartesian, serial or gripper API. It checks
-return values of all four mutating SDK calls. On SDK failure it attempts stop
-and end, publishes the SDK error and remains latched; it does not clear faults.
+The plugin imports no `RobotPower`, `RobotPoweroff`, `ClearRobotError`,
+calibration, Cartesian, serial or gripper API. The physical build imports only
+`RobotStopRecover`, used once at first-hold activation to clear a latched
+forced stop; it is never a power cycle, error clear or driver/move fault reset.
+The bridge checks return values of all mutating SDK calls. On SDK failure it
+attempts stop and end, publishes the SDK error and remains latched; it does not
+clear faults.
 
 ## Command subset and state machine
 
