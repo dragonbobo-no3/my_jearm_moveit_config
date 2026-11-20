@@ -7,6 +7,24 @@
 #include <stdio.h>
 #include <string.h>
 
+/* Hard caps on the policy file. Isolated SDK-simulation build (compile core AND
+ * plugin with -DMK2_SIMULATION_ONLY=1): 4 / 40 / 0.5. Physical/default builds:
+ * 3.0 / 20 / 0.3 (2026-11-19, slightly below sim; hardware vmax >= 3.98). The
+ * policy file selects the actual limits inside these caps; a policy above them
+ * is rejected at startup (fail closed). */
+#ifndef MK2_SIMULATION_ONLY
+#define MK2_SIMULATION_ONLY 0
+#endif
+#if MK2_SIMULATION_ONLY
+#define MK2_CAP_VELOCITY 4.0
+#define MK2_CAP_ACCELERATION 40.0
+#define MK2_CAP_FOLLOWING 0.5
+#else
+#define MK2_CAP_VELOCITY 3.0
+#define MK2_CAP_ACCELERATION 20.0
+#define MK2_CAP_FOLLOWING 0.3
+#endif
+
 static struct json_object *strict_json(const char *text, size_t length)
 {
     if (!text || !length || length > MK2_FRAME_MAX || memchr(text, '\0', length)) return NULL;
@@ -67,13 +85,15 @@ static bool policy_valid(const struct mk2_policy *p)
         !isfinite(p->clock_skew) || p->clock_skew <= 0 || p->clock_skew > 0.25 ||
         !isfinite(p->first_hold_tolerance) || p->first_hold_tolerance <= 0 ||
         p->first_hold_tolerance > 0.002 || !isfinite(p->following_tolerance) ||
-        p->following_tolerance < p->first_hold_tolerance || p->following_tolerance > 0.05 ||
+        p->following_tolerance < p->first_hold_tolerance ||
+        p->following_tolerance > MK2_CAP_FOLLOWING ||
         !isfinite(p->servo_q) || !isfinite(p->servo_r) || p->servo_q <= 0 || p->servo_r <= 0)
         return false;
     for (int i = 0; i < MK2_AXES; i++)
         if (!isfinite(p->lower[i]) || !isfinite(p->upper[i]) || p->lower[i] >= p->upper[i] ||
-            !isfinite(p->velocity[i]) || p->velocity[i] <= 0 || p->velocity[i] > 0.3 ||
-            !isfinite(p->acceleration[i]) || p->acceleration[i] <= 0 || p->acceleration[i] > 0.5)
+            !isfinite(p->velocity[i]) || p->velocity[i] <= 0 || p->velocity[i] > MK2_CAP_VELOCITY ||
+            !isfinite(p->acceleration[i]) || p->acceleration[i] <= 0 ||
+            p->acceleration[i] > MK2_CAP_ACCELERATION)
             return false;
     return true;
 }

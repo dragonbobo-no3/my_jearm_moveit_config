@@ -12,7 +12,10 @@
 // position 0..1 -> angle 0..70000 (0.001 mm opening), torque N*m -> effort 0.001 N*m.
 //
 // Startup never moves the gripper: it clears errors while disabled, waits for
-// feedback, then enables at the measured opening.
+// feedback, then enables at the measured opening. If the gripper later turns
+// up disabled without an error (e.g. its supply dropped; it then ignores plain
+// Enable frames) the same sequence is repeated at the measured opening, so it
+// never jumps to an old target; the PC must resend its command.
 //
 // The gripper firmware only accepts 0x159 with DLC 7 (byte 6: bit0 enable,
 // bit1 clear error); piper_gripper sends DLC 8 and is ignored, so control
@@ -322,6 +325,7 @@ int main(int argc, char ** argv) {
 
   auto last_send = Clock::now();
   auto last_report = Clock::now();
+  auto last_reenable = Clock::now();
   bool feedback_lost = false;
   uint8_t last_status = st->status_code;
   char buf[4097];
@@ -374,6 +378,21 @@ int main(int argc, char ** argv) {
         print_state(*now_state, now_state->status_code != last_status ? "status change:" : "state:");
         last_status = now_state->status_code;
         last_report = Clock::now();
+      }
+      if (cmd.status == pg::StatusCode::Enable && !now_state->foc.driver_enable_status &&
+          !now_state->foc.driver_error_status && Clock::now() - last_reenable >= std::chrono::seconds(2)) {
+        last_reenable = Clock::now();
+        pg::GripperCommand clear = cmd;
+        clear.status = pg::StatusCode::DisableAndClearError;
+        for (int i = 0; i < 3; ++i) {
+          send(can_fd, clear);
+          std::this_thread::sleep_for(std::chrono::milliseconds(30));
+        }
+        cmd.angle_0p001mm = std::min(now_state->angle_0p001mm, kAngleMax);
+        cmd.status = pg::StatusCode::Enable;
+        send(can_fd, cmd);
+        last_send = Clock::now();
+        print_state(*now_state, "found DISABLED (power loss?): cleared, re-enabled at current opening; resend command.");
       }
     }
 

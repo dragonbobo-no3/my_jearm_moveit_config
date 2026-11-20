@@ -78,7 +78,7 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(PROGRAMS scripts/mk2_state_bridge.py scripts/mk2_control_owner.py
+install(PROGRAMS scripts/mk2_state_bridge.py scripts/mk2_control_owner.py scripts/mk2_waist_bridge.py scripts/mk2_waist_jog.py
   DESTINATION lib/${PROJECT_NAME}
 )
 install(FILES scripts/mk2_ownership.py DESTINATION lib/${PROJECT_NAME})

@@ -2,6 +2,7 @@
 
 import importlib.util
 import math
+import tempfile
 from pathlib import Path
 
 import yaml
@@ -59,13 +60,26 @@ def _launch_setup(context):
     support = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(support)
     hardware = load_yaml('hardware_mk2.yaml')
+    model = value('model')
+    waist = value('waist')
+    if waist == 'feedback' and model != 'dual':
+        raise ValueError('waist:=feedback requires model:=dual')
+    if model == 'dual':
+        source_urdf, source_srdf = support.adapt_dual_model(
+            (config / 'DUAL_JEARM.urdf').read_text(encoding='utf-8'),
+            (config / 'DUAL_JEARM.srdf').read_text(encoding='utf-8'),
+            waist=waist == 'feedback')
+        flange_parent = 'Left_Link7'
+    else:
+        source_urdf = (config / 'LH_MK2.urdf').read_text(encoding='utf-8')
+        source_srdf = (config / 'LH_MK2.srdf').read_text(encoding='utf-8')
+        flange_parent = 'Link7'
     urdf, srdf, limits = support.build_hardware_description(
-        (config / 'LH_MK2.urdf').read_text(encoding='utf-8'),
-        (config / 'LH_MK2.srdf').read_text(encoding='utf-8'), hardware,
+        source_urdf, source_srdf, hardware,
         value('robot_ip'), state_port, command_port,
         control_backend=backend if mode != 'feedback' else 'simulation',
         confirm_physical_control=physical_confirmed if mode != 'feedback' else False,
-        shared_ownership=mode == 'shared',
+        shared_ownership=mode == 'shared', flange_parent=flange_parent,
     )
     params = {
         'robot_description': urdf,
@@ -137,7 +151,7 @@ def _launch_setup(context):
         # discard the old MoveGroup server and all of its execution context.
         fallback = fallback_module.ControlFallback([move_group], readonly_frontend, visualization[1:])
     common = [
-        LogInfo(msg=f'LH_MK2 mode={backend_mode} hardware_mode={mode}; Robot0[0..6] -> joint1..joint7 '
+        LogInfo(msg=f'LH_MK2 model={model} waist={waist} mode={backend_mode} hardware_mode={mode}; Robot0[0..6] -> joint1..joint7 '
                 '(SDK radians unchanged); original teach-pendant URDF axes/origins preserved.'),
         Node(
             package='robot_state_publisher', executable='robot_state_publisher',
@@ -160,6 +174,13 @@ def _launch_setup(context):
                          'state_validity_service_name': '/check_state_validity'}], output='screen',
         ),
     ]
+    if waist == 'feedback':
+        # Read-only CAN waist feedback (controller mk2_waist_server); never commands.
+        common.append(Node(
+            package='my_jearm_moveit_config', executable='mk2_waist_bridge.py', output='screen',
+            arguments=['--robot-ip', value('robot_ip'), '--port', value('waist_port'),
+                       '--sign', value('waist_sign')],
+        ))
 
     def stop_on_exit(process, reason):
         return RegisterEventHandler(OnProcessExit(
@@ -220,6 +241,16 @@ def _launch_setup(context):
             'mk2_shared_ownership': True,
             'hardware_components_initial_state.inactive': ['lh_mk2_system'],
         })
+    if backend == 'simulation':
+        # SDK simulation only: native sim following tolerance is 0.5 rad. Let
+        # JTC abort just before it (0.45) instead of the physical 0.22. A param
+        # file is required: dict params would only target controller_manager.
+        with tempfile.NamedTemporaryFile('w', prefix='mk2_sim_jtc_', suffix='.yaml',
+                                         delete=False, encoding='utf-8') as stream:
+            yaml.safe_dump({'jearm_controller': {'ros__parameters': {'constraints': {
+                f'joint{i}': {'trajectory': 0.45, 'goal': 0.03} for i in range(1, 8)}}}},
+                stream)
+        controller_parameters.append(stream.name)
     control = Node(
         package='my_jearm_moveit_config', executable='mk2_shared_clock_control_node',
         output='screen',
@@ -322,6 +353,15 @@ def generate_launch_description():
         DeclareLaunchArgument('mode', default_value='sim', choices=['sim', 'real'],
             description='sim: isolated SDK simulation; real: explicit physical servo takeover. No automatic power changes.'),
         DeclareLaunchArgument('start_rviz', default_value='true', choices=['true', 'false']),
+        DeclareLaunchArgument('model', default_value='dual', choices=['dual', 'lh_mk2'],
+            description='dual: DUAL_JEARM waist model, left arm = joint1..7, waist/right arm fixed; '
+                        'lh_mk2: original single-arm LH_MK2 model.'),
+        DeclareLaunchArgument('waist', default_value='fixed', choices=['fixed', 'feedback'],
+            description='fixed: waist at zero; feedback: waist_joint follows CAN feedback '
+                        '(controller mk2_waist_server, read-only). Not planned by MoveIt.'),
+        DeclareLaunchArgument('waist_port', default_value='8005'),
+        DeclareLaunchArgument('waist_sign', default_value='1', choices=['1', '-1'],
+            description='URDF waist angle = waist_sign * protocol angle'),
         DeclareLaunchArgument('robot_ip', default_value='192.168.0.99'),
         DeclareLaunchArgument('state_port', default_value='8000'),
         DeclareLaunchArgument('command_port', default_value='8001'),
