@@ -483,6 +483,16 @@ int mk2_core_handle(struct mk2_core *core, const char *frame, size_t length, dou
             if (core->sdk_error) mk2_core_stop(core, MK2_SDK_ERROR);
             else {
                 if (first) { core->first_receive = now; core->first_data_time = data_time; }
+                else {
+                    /* Slowly track crystal frequency offset between PC and controller
+                     * (capped at 200 ppm) so long-running sessions never trip clock_skew,
+                     * while still rejecting stalls and burst catch-up frames. */
+                    double skew = (data_time - core->first_data_time) - (now - core->first_receive);
+                    double max_corr = 200e-6 * dt;
+                    if (skew > max_corr) skew = max_corr;
+                    else if (skew < -max_corr) skew = -max_corr;
+                    core->first_receive -= skew;
+                }
                 core->last_receive = now; core->last_data_time = data_time;
                 memcpy(core->last_target, target, sizeof(target));
                 memcpy(core->last_velocity, velocity, sizeof(velocity));

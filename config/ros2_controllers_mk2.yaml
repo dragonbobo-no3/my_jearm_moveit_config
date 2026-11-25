@@ -27,10 +27,10 @@ jearm_controller:
       stopped_velocity_tolerance: 0.05
       # Physical tracking lag measured ~0.17 s (0.15 rad at 0.9 rad/s). Keep
       # just below the native physical following tolerance 0.25 rad.
-      joint1: {trajectory: 0.22, goal: 0.03}
-      joint2: {trajectory: 0.22, goal: 0.03}
-      joint3: {trajectory: 0.22, goal: 0.03}
-      joint4: {trajectory: 0.22, goal: 0.03}
-      joint5: {trajectory: 0.22, goal: 0.03}
-      joint6: {trajectory: 0.22, goal: 0.03}
-      joint7: {trajectory: 0.22, goal: 0.03}
+      joint1: {trajectory: 0.22, goal: 0.01}
+      joint2: {trajectory: 0.22, goal: 0.01}
+      joint3: {trajectory: 0.22, goal: 0.01}
+      joint4: {trajectory: 0.22, goal: 0.01}
+      joint5: {trajectory: 0.22, goal: 0.01}
+      joint6: {trajectory: 0.22, goal: 0.01}
+      joint7: {trajectory: 0.22, goal: 0.01}
